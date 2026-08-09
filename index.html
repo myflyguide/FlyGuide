@@ -61,6 +61,8 @@ const lerpArr = (arr, date) => {
 const moonPhase = (d) => { const syn = 29.53058867; const ref = new Date(Date.UTC(2000, 0, 6, 18, 14)); const days = (d - ref) / 86400000; return ((days % syn) + syn) % syn / syn; };
 const moonName = (p) => p < 0.03 || p > 0.97 ? "New moon" : p < 0.22 ? "Waxing crescent" : p < 0.28 ? "First quarter" : p < 0.47 ? "Waxing gibbous" : p < 0.53 ? "Full moon" : p < 0.72 ? "Waning gibbous" : p < 0.78 ? "Last quarter" : "Waning crescent";
 const gmapsDir = (la, lo) => `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;
+const havMi = (a1, o1, a2, o2) => { const R = 3959, d = Math.PI / 180; const dA = (a2 - a1) * d, dO = (o2 - o1) * d; const h = Math.pow(Math.sin(dA / 2), 2) + Math.cos(a1 * d) * Math.cos(a2 * d) * Math.pow(Math.sin(dO / 2), 2); return 2 * R * Math.asin(Math.sqrt(h)); };
+const nearestSpots = (la, lo, n) => SPOTS.map((s) => ({ s, mi: havMi(la, lo, s.lat, s.lng) })).sort((a, b) => a.mi - b.mi).slice(0, n || 6);
 const to10 = (s) => Math.max(1, Math.round(s / 10));
 
 /* ---------- engine ---------- */
@@ -278,7 +280,27 @@ function App() {
   const [manual, setManual] = useState(!!hash.spot);
   const [q, setQ] = useState("");
   const [showV, setShowV] = useState(false);
+  const [geoSugs, setGeoSugs] = useState([]);
+  const [nearby, setNearby] = useState(null);
   const sugs = useMemo(() => suggestFor(q), [q]);
+  useEffect(() => {
+    const qq = q.trim(); if (qq.length < 3) { setGeoSugs([]); return; }
+    let alive = true;
+    const t = setTimeout(async () => {
+      try {
+        if (/^\d{5}$/.test(qq)) {
+          const r = await fetch(`https://api.zippopotam.us/us/${qq}`);
+          if (r.ok) { const j = await r.json(); const p = j.places && j.places[0]; if (alive && p) setGeoSugs([{ t: "geo", label: `${p["place name"]}, ${p["state abbreviation"]} ${qq}`, sub: "zip", la: parseFloat(p.latitude), lo: parseFloat(p.longitude) }]); }
+          return;
+        }
+        if (/^\d/.test(qq)) { setGeoSugs([]); return; }
+        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(qq)}&count=4&language=en&format=json`);
+        const j = await r.json(); if (!alive) return;
+        setGeoSugs((j.results || []).map((g) => ({ t: "geo", label: `${g.name}, ${g.admin1 || g.country || ""}`, sub: "place", la: g.latitude, lo: g.longitude })));
+      } catch (e) { if (alive) setGeoSugs([]); }
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+  }, [q]);
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
 
@@ -295,7 +317,8 @@ function App() {
 
   useEffect(() => { if (!cor.species.includes(sp)) setSp(cor.species[0]); }, [cid]);
   const firstRun = useRef(true);
-  useEffect(() => { if (firstRun.current) { firstRun.current = false; return; } setManual(false); }, [cid, sp, mode]);
+  const skipReset = useRef(false);
+  useEffect(() => { if (firstRun.current) { firstRun.current = false; return; } if (skipReset.current) { skipReset.current = false; return; } setManual(false); }, [cid, sp, mode]);
 
   /* tide fetch per station, 32 day range */
   useEffect(() => {
@@ -401,7 +424,17 @@ function App() {
   const conf = confidence(dayOff, spot);
   const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
 
-  const pickPlace = (g) => { setQ(""); if (g.t === "sp") { const home = CORR.find((c) => c.species.includes(g.sp)); if (!cor.species.includes(g.sp) && home) setCid(home.id); setSp(g.sp); setShowV(false); } else { setCid(g.cid); setShowV(true); if (g.id) { setSpotId(g.id); setManual(true); } } };
+  const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); };
+  const applyNear = (lbl, la, lo) => { const items = nearestSpots(la, lo, 6); setNearby({ label: lbl, items }); if (items[0]) { skipReset.current = true; setCid(items[0].s.c); setShowV(true); } };
+  const locate = async (lbl) => { try { const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(lbl.split(",")[0])}&count=1&language=en&format=json`); const j = await r.json(); const g = j.results && j.results[0]; if (g) applyNear(lbl, g.latitude, g.longitude); } catch (e) {} };
+  const pickPlace = (g) => {
+    setQ("");
+    if (g.t === "geo") { applyNear(g.label, g.la, g.lo); return; }
+    if (g.t === "sp") { const home = CORR.find((c) => c.species.includes(g.sp)); if (!cor.species.includes(g.sp) && home) { skipReset.current = true; setCid(home.id); } setSp(g.sp); setShowV(false); return; }
+    if (g.t === "spot") { const s = SPOTS.find((x) => x.id === g.id); if (s) jumpToSpot(s); return; }
+    skipReset.current = true; setCid(g.cid); setShowV(true);
+    if (g.sub !== "region") locate(g.label);
+  };
   const send = async () => {
     const text = draft.trim(); if (!text) return;
     setDraft("");
@@ -416,7 +449,7 @@ function App() {
     }
     const a = localAnswer(text, env);
     setChat((c) => ({ ...c, msgs: [...c.msgs, { me: false, t: a.text }] }));
-    if (a.pickId) { setSpotId(a.pickId); setManual(true); }
+    if (a.pickId) { const s = SPOTS.find((x) => x.id === a.pickId); if (s) jumpToSpot(s); }
   };
   useEffect(() => { if (chat.open && endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [chat]);
 
@@ -450,15 +483,15 @@ function App() {
         <div style={{ position: "relative", marginBottom: 10 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Town, zip, or species. Try 03885 or tarpon"
             style={{ width: "100%", boxSizing: "border-box", background: C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "13px 14px", fontSize: 15, outline: "none", fontFamily: F.body }} />
-          {sugs.length > 0 && (
+          {(() => { const all = [...sugs, ...geoSugs.filter((g) => !sugs.some((s) => s.label.toLowerCase() === g.label.toLowerCase()))].slice(0, 8); return all.length > 0 && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
-              {sugs.map((g, i) => (
+              {all.map((g, i) => (
                 <button key={i} onClick={() => pickPlace(g)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: i ? `1px solid ${C.line}` : "none", color: C.bone, padding: "11px 14px", fontSize: 14.5, cursor: "pointer" }}>
                   <span>{g.label}</span><span style={{ fontFamily: F.mono, fontSize: 10.5, color: g.t === "sp" ? C.blaze : C.dim, marginLeft: 10 }}>{g.sub}</span>
                 </button>
               ))}
             </div>
-          )}
+          ); })()}
         </div>
 
         {/* species verdicts after a place pick */}
@@ -470,6 +503,26 @@ function App() {
                 {SPX[v.sp].short}: {v.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {nearby && (
+          <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 }}>Spots near {nearby.label}</div>
+              <button onClick={() => setNearby(null)} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", fontFamily: F.mono, fontSize: 10.5 }}>CLEAR</button>
+            </div>
+            {nearby.items.map(({ s, mi }) => (
+              <button key={s.id} onClick={() => jumpToSpot(s)}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{s.name}</div>
+                  <div style={{ color: C.dim, fontSize: 12 }}>{s.area} · {Object.keys(s.sp).filter((k) => s.sp[k] > 0).map((k) => SPX[k].short).join(", ")}</div>
+                </div>
+                <div style={{ fontFamily: F.mono, fontSize: 12, color: C.stone }}>{Math.round(mi)} mi</div>
+              </button>
+            ))}
+            {nearby.items[0] && nearby.items[0].mi > 150 && <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 4 }}>Nothing covered within 150 miles, these are the closest calls.</div>}
           </div>
         )}
 
