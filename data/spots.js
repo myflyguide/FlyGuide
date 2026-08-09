@@ -165,6 +165,59 @@ g.FG_KB = {
   ]
 };
 
+
+/* ---------------- Fly box, ranked by the engine per time of day ---------------- */
+g.FG_FLYBOX = {
+  striper: [
+    { n: "Gurgler", sz: "2/0", when: "dawn", clr: "clear", why: "First-light surface eats before the sun pushes fish down" },
+    { n: "Olive/white Clouser", sz: "1/0", when: "day", clr: "clear", why: "The everything fly, rides hook-up through structure" },
+    { n: "Sand eel (Jiggy, Surf Candy)", sz: "#1", when: "day", clr: "clear", why: "Match the dominant bait, slim and translucent" },
+    { n: "Chartreuse/white Clouser", sz: "1/0", when: "any", clr: "stained", why: "Visibility bomb when the water carries color" },
+    { n: "White Hollow Fleye", sz: "3/0", when: "dusk", clr: "any", why: "Big profile for the evening push, moves water" },
+    { n: "Black Deceiver", sz: "2/0", when: "night", clr: "any", why: "Silhouette against the night sky, the classic dark-water killer" },
+    { n: "Crab fly", sz: "#2", when: "day", clr: "clear", why: "Flats fish rooting bottom want the crab, not the chase" }
+  ],
+  albie: [
+    { n: "Albie Anchovy", sz: "#2", when: "dawn", clr: "clear", why: "The rain-bait match at the light they feed hardest in" },
+    { n: "Surf Candy tan", sz: "#2", when: "day", clr: "clear", why: "Translucent epoxy holds up to teeth and speed" },
+    { n: "Gummy Minnow", sz: "#4", when: "day", clr: "clear", why: "Glass-calm cheat code when they refuse everything" },
+    { n: "Epoxy silverside", sz: "#1", when: "dusk", clr: "any", why: "Bigger bite of light as the sun drops" },
+    { n: "Chartreuse over white Candy", sz: "#2", when: "any", clr: "stained", why: "The one loud fly worth carrying for green water days" }
+  ],
+  tarpon: [
+    { n: "Black/purple Toad", sz: "2/0", when: "dawn", clr: "any", why: "Silhouette at grey light, the migration standard" },
+    { n: "Tan Toad", sz: "2/0", when: "day", clr: "clear", why: "Neutral and slow-sinking for laid-up fish in sun" },
+    { n: "Cockroach", sz: "3/0", when: "day", clr: "any", why: "Sixty years of eats, swims level, lands soft" },
+    { n: "EP baitfish white", sz: "3/0", when: "dusk", clr: "any", why: "Bulk without weight when they key on mullet" },
+    { n: "Palolo worm", sz: "#1", when: "dusk", clr: "clear", why: "Around the May and June full moons, nothing else exists" },
+    { n: "Black Death", sz: "3/0", when: "night", clr: "stained", why: "Dark water, dark sky, maximum shadow" }
+  ],
+  snook: [
+    { n: "DT Special", sz: "#2", when: "dawn", clr: "clear", why: "Beach-trough breakfast fly, small and panicked" },
+    { n: "White EP pilchard", sz: "#1", when: "day", clr: "clear", why: "The pilchard match on every structure line" },
+    { n: "Gurgler", sz: "#1", when: "dawn", clr: "any", why: "Calm first light on the beach, the eat is violent" },
+    { n: "Chartreuse/white Clouser", sz: "#1", when: "any", clr: "stained", why: "Cuts the stain along mangrove mud lines" },
+    { n: "Shrimp pattern", sz: "#2", when: "night", clr: "any", why: "Dead-drifted into dock light edges, the night game" },
+    { n: "White Deceiver", sz: "1/0", when: "dusk", clr: "any", why: "Mullet-run profile as the light dies" }
+  ],
+  redfish: [
+    { n: "Kwan tan", sz: "#2", when: "day", clr: "clear", why: "The tailing-fish standard, lands soft, sits in the zone" },
+    { n: "EP crab", sz: "#2", when: "day", clr: "clear", why: "Crabs are the number one food group, match it" },
+    { n: "Gurgler", sz: "#2", when: "dawn", clr: "any", why: "Shoreline cruisers at first light eat on top" },
+    { n: "Gold spoon fly", sz: "#2", when: "any", clr: "stained", why: "Flash they can find from a zip code away in dirty marsh" },
+    { n: "Black/purple shrimp", sz: "#2", when: "dusk", clr: "stained", why: "Max silhouette for low light and tannic water" },
+    { n: "Redfish Crack", sz: "#4", when: "day", clr: "any", why: "Weedless through the grass, the flood-tide workhorse" }
+  ],
+  bonefish: [
+    { n: "Gotcha", sz: "#4", when: "day", clr: "clear", why: "The Bahamas default, pearl over sand is home cooking" },
+    { n: "Spawning Shrimp", sz: "#4", when: "day", clr: "clear", why: "Bigger meal for bigger singles, still lands quiet" },
+    { n: "Bonefish Bitters olive", sz: "#6", when: "day", clr: "clear", why: "Over turtle grass, olive disappears until it moves" },
+    { n: "Crazy Charlie pink", sz: "#6", when: "any", clr: "any", why: "Pink works everywhere in the islands, nobody knows why" },
+    { n: "Mantis shrimp heavy", sz: "#2", when: "day", clr: "stained", why: "Gets down fast in wind chop and deeper edges" },
+    { n: "Small crab", sz: "#4", when: "dawn", clr: "clear", why: "Early tailers on the flood want it on the bottom, unmoved" }
+  ]
+};
+
 /* ---------------- Spots ---------------- */
 g.FG_SPOTS = [
   /* ================= NORTHEAST & MID-ATLANTIC ================= */

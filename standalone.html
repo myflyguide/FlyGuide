@@ -180,6 +180,59 @@ g.FG_KB = {
   ]
 };
 
+
+/* ---------------- Fly box, ranked by the engine per time of day ---------------- */
+g.FG_FLYBOX = {
+  striper: [
+    { n: "Gurgler", sz: "2/0", when: "dawn", clr: "clear", why: "First-light surface eats before the sun pushes fish down" },
+    { n: "Olive/white Clouser", sz: "1/0", when: "day", clr: "clear", why: "The everything fly, rides hook-up through structure" },
+    { n: "Sand eel (Jiggy, Surf Candy)", sz: "#1", when: "day", clr: "clear", why: "Match the dominant bait, slim and translucent" },
+    { n: "Chartreuse/white Clouser", sz: "1/0", when: "any", clr: "stained", why: "Visibility bomb when the water carries color" },
+    { n: "White Hollow Fleye", sz: "3/0", when: "dusk", clr: "any", why: "Big profile for the evening push, moves water" },
+    { n: "Black Deceiver", sz: "2/0", when: "night", clr: "any", why: "Silhouette against the night sky, the classic dark-water killer" },
+    { n: "Crab fly", sz: "#2", when: "day", clr: "clear", why: "Flats fish rooting bottom want the crab, not the chase" }
+  ],
+  albie: [
+    { n: "Albie Anchovy", sz: "#2", when: "dawn", clr: "clear", why: "The rain-bait match at the light they feed hardest in" },
+    { n: "Surf Candy tan", sz: "#2", when: "day", clr: "clear", why: "Translucent epoxy holds up to teeth and speed" },
+    { n: "Gummy Minnow", sz: "#4", when: "day", clr: "clear", why: "Glass-calm cheat code when they refuse everything" },
+    { n: "Epoxy silverside", sz: "#1", when: "dusk", clr: "any", why: "Bigger bite of light as the sun drops" },
+    { n: "Chartreuse over white Candy", sz: "#2", when: "any", clr: "stained", why: "The one loud fly worth carrying for green water days" }
+  ],
+  tarpon: [
+    { n: "Black/purple Toad", sz: "2/0", when: "dawn", clr: "any", why: "Silhouette at grey light, the migration standard" },
+    { n: "Tan Toad", sz: "2/0", when: "day", clr: "clear", why: "Neutral and slow-sinking for laid-up fish in sun" },
+    { n: "Cockroach", sz: "3/0", when: "day", clr: "any", why: "Sixty years of eats, swims level, lands soft" },
+    { n: "EP baitfish white", sz: "3/0", when: "dusk", clr: "any", why: "Bulk without weight when they key on mullet" },
+    { n: "Palolo worm", sz: "#1", when: "dusk", clr: "clear", why: "Around the May and June full moons, nothing else exists" },
+    { n: "Black Death", sz: "3/0", when: "night", clr: "stained", why: "Dark water, dark sky, maximum shadow" }
+  ],
+  snook: [
+    { n: "DT Special", sz: "#2", when: "dawn", clr: "clear", why: "Beach-trough breakfast fly, small and panicked" },
+    { n: "White EP pilchard", sz: "#1", when: "day", clr: "clear", why: "The pilchard match on every structure line" },
+    { n: "Gurgler", sz: "#1", when: "dawn", clr: "any", why: "Calm first light on the beach, the eat is violent" },
+    { n: "Chartreuse/white Clouser", sz: "#1", when: "any", clr: "stained", why: "Cuts the stain along mangrove mud lines" },
+    { n: "Shrimp pattern", sz: "#2", when: "night", clr: "any", why: "Dead-drifted into dock light edges, the night game" },
+    { n: "White Deceiver", sz: "1/0", when: "dusk", clr: "any", why: "Mullet-run profile as the light dies" }
+  ],
+  redfish: [
+    { n: "Kwan tan", sz: "#2", when: "day", clr: "clear", why: "The tailing-fish standard, lands soft, sits in the zone" },
+    { n: "EP crab", sz: "#2", when: "day", clr: "clear", why: "Crabs are the number one food group, match it" },
+    { n: "Gurgler", sz: "#2", when: "dawn", clr: "any", why: "Shoreline cruisers at first light eat on top" },
+    { n: "Gold spoon fly", sz: "#2", when: "any", clr: "stained", why: "Flash they can find from a zip code away in dirty marsh" },
+    { n: "Black/purple shrimp", sz: "#2", when: "dusk", clr: "stained", why: "Max silhouette for low light and tannic water" },
+    { n: "Redfish Crack", sz: "#4", when: "day", clr: "any", why: "Weedless through the grass, the flood-tide workhorse" }
+  ],
+  bonefish: [
+    { n: "Gotcha", sz: "#4", when: "day", clr: "clear", why: "The Bahamas default, pearl over sand is home cooking" },
+    { n: "Spawning Shrimp", sz: "#4", when: "day", clr: "clear", why: "Bigger meal for bigger singles, still lands quiet" },
+    { n: "Bonefish Bitters olive", sz: "#6", when: "day", clr: "clear", why: "Over turtle grass, olive disappears until it moves" },
+    { n: "Crazy Charlie pink", sz: "#6", when: "any", clr: "any", why: "Pink works everywhere in the islands, nobody knows why" },
+    { n: "Mantis shrimp heavy", sz: "#2", when: "day", clr: "stained", why: "Gets down fast in wind chop and deeper edges" },
+    { n: "Small crab", sz: "#4", when: "dawn", clr: "clear", why: "Early tailers on the flood want it on the bottom, unmoved" }
+  ]
+};
+
 /* ---------------- Spots ---------------- */
 g.FG_SPOTS = [
   /* ================= NORTHEAST & MID-ATLANTIC ================= */
@@ -1292,7 +1345,7 @@ const C = {
 const F = { disp: "'Barlow Condensed', sans-serif", body: "'Barlow', sans-serif", mono: "'IBM Plex Mono', monospace" };
 
 /* ---------- data handles ---------- */
-const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDORS, SPOTS = window.FG_SPOTS, KB = window.FG_KB;
+const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDORS, SPOTS = window.FG_SPOTS, KB = window.FG_KB, FBX = window.FG_FLYBOX || {};
 const corrById = (id) => CORR.find((c) => c.id === id) || CORR[0];
 const MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MNF = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1381,6 +1434,9 @@ const moonFactor = (sp, date) => {
   const p = moonPhase(date); const nearMoon = p < 0.07 || p > 0.93 || Math.abs(p - 0.5) < 0.07;
   return nearMoon ? 1.12 : 1;
 };
+const clarityFor = (ctx) => { const w = ctx.windByHour[12] != null ? ctx.windByHour[12] : ctx.windClimo; return w > 14 ? "stained" : "clear"; };
+const blockOfHour = (h) => h < 9 ? "dawn" : h < 16 ? "day" : h < 20 ? "dusk" : "night";
+const rankFlies = (sp, block, clr) => (FBX[sp] || []).map((f) => { let sc = 0; if (f.when === block) sc += 3; else if (f.when === "any") sc += 1.5; if (f.clr === clr) sc += 2; else if (f.clr === "any") sc += 1; return { f, sc }; }).sort((a, b) => b.sc - a.sc).slice(0, 3);
 const modeFactor = (spot, mode) => {
   const w = spot.wade.r.toLowerCase();
   if (mode === "wade") { if (w.startsWith("no")) return 0.35; if (w.startsWith("bank")) return 0.85; return 1; }
@@ -1502,14 +1558,51 @@ const parseMonth = (s) => { for (let i = 0; i < 12; i++) { if (s.includes(MONFUL
 function localAnswer(q, env) {
   const s = q.toLowerCase();
   const has = (re) => re.test(s);
-  const spHit = Object.keys(SP_ALIASES).find((sp) => SP_ALIASES[sp].some((a) => s.includes(a)));
-  const spotHit = SPOTS.find((x) => x.c === env.cid && (x.al || []).some((a) => s.includes(a))) || SPOTS.find((x) => (x.al || []).some((a) => s.includes(a)));
+  const spHit = Object.keys(SP_ALIASES).find((sp2) => SP_ALIASES[sp2].some((a) => s.includes(a)));
+  const spotHits = SPOTS.filter((x) => (x.al || []).some((a) => s.includes(a)));
+  const spotHit = spotHits.find((x) => x.c === env.cid) || spotHits[0];
   for (const f of KB.faq) { if (f.k.some((k) => s.includes(k))) return { text: f.a }; }
   const sp = spHit || env.sp;
   const dayDate = parseDay(s, env.today);
   const mon = parseMonth(s);
-  if (/^(hi|hey|hello|yo|sup|good morning|morning)\b/.test(s)) return { text: `Morning. Ask me real questions: "why is ${env.spotName} a ${to10(env.dm ? env.dm.peak : 50)}", "where should I fish Saturday", "what tide tonight", "what do ${spName(env.sp)}s eat in ${MONFULL[env.date.getMonth()]}". I'll give you real answers.` };
+  if (/^(hi|hey|hello|yo|sup|good morning|morning)\b/.test(s)) return { text: `Morning. You're on ${env.spotName}. Ask me why the score, the windows, the fly for right now, wade or bail, or where else. Real questions get real answers.` };
+  if (spotHits.length >= 2 && /\bor\b|\bvs\b|versus|better/.test(s) && env.dayFor) {
+    const [a, b2] = spotHits;
+    const da = env.dayFor(a.id, env.today), db = env.dayFor(b2.id, env.today);
+    const win = da.peak >= db.peak ? a : b2, wd = da.peak >= db.peak ? da : db, ld = da.peak >= db.peak ? db : da, lose = da.peak >= db.peak ? b2 : a;
+    return { text: `${win.name} over ${lose.name} today: ${to10(wd.peak)}/10 against ${to10(ld.peak)}/10. ${wd.windows.length ? win.name + " windows: " + fmtWin(wd.windows) + "." : ""} ${win.brief.prime}`, pickId: win.id };
+  }
   if (/\bwhy\b/.test(s) && (/score|rating|number|low|high|\d\s*(\/|out of)\s*10|only a/.test(s) || /why is (it|this|that)/.test(s))) return { text: env.explainLine };
+  if (/can i wade|wade|wading|walk in|walk-in|access|park(ing)?/.test(s)) {
+    const t = spotHit || env.spotObj;
+    const bw = t.wade.best === "low" ? "the lower half of the tide" : t.wade.best === "high" ? "the top of the tide" : t.wade.best === "mid" ? "mid tide" : "any stage";
+    return { text: `${t.name}, wading (${t.wade.r}): ${t.wade.n} Best at ${bw}. ${env.tideLine} Access (${t.access.v}): ${t.access.n}` };
+  }
+  if (/\bramp|launch|put in|put-in|boat access/.test(s)) {
+    const t = spotHit || env.spotObj;
+    if (!t.boat.ramps.length && !t.boat.drops.length) return { text: `${t.name} is bank and wade water, no ramp game here. Flip to wade mode for the real brief.` };
+    return { text: `${t.name} boat ops: ${t.boat.ramps.map((r) => "ramp at " + r.n).join(", ")}${t.boat.drops.length ? ". Drops: " + t.boat.drops.map((d2) => d2.n).join(", ") + "." : "."} Directions are one tap in boat mode.` };
+  }
+  if (/blown out|blowout|too (windy|rough)|wind(y)? (kill|ruin)|plan b|backup|bail/.test(s)) {
+    const t = spotHit || env.spotObj;
+    return { text: `${t.name} blowout plan: ${t.brief.blowout} By the numbers, next best right now: ${env.ranking && env.ranking[1] ? env.ranking[1].spot.name + " at " + to10(env.ranking[1].peak) + "/10" : "check the board"}.` };
+  }
+  if (/what fly|which fly|fly (right )?now|best fly|tie on/.test(s)) return { text: env.flyLine };
+  if (/should i (go|fish|bother)|worth (it|going|the drive)|is it (any )?good|go or no/.test(s)) {
+    const p = env.dm ? env.dm.peak : 0, c2 = env.conf;
+    if (p >= 70) return { text: `Go. ${env.spotName} is a ${to10(p)}/10 at ${c2}% confidence. ${env.windowLine} ${env.tideLine}` };
+    if (p >= 50) return { text: `Worth it if you fish the window, not the whole day. ${env.spotName} is a ${to10(p)}/10. ${env.windowLine} Backup if it feels dead: ${env.ranking && env.ranking[1] ? env.ranking[1].spot.name : "check the board"}.` };
+    return { text: `I'd save the gas for a better tide. ${env.spotName} is a ${to10(p)}/10 today. ${env.explainLine} Best bet instead: ${env.ranking && env.ranking[0] ? env.ranking[0].spot.name + " at " + to10(env.ranking[0].peak) + "/10" : "scan the 30-day board"}.` };
+  }
+  if (/how('s| is| are)? (it|the fishing|things|conditions)|conditions|report|what('s| is) it like|any good/.test(s) && !dayDate) return { text: env.statusLine };
+  if (/what tide|tide (now|today|tonight)|next (high|low)|when.*(tide|window)|what time|best time/.test(s) && !dayDate) return { text: `${env.tideLine} ${env.windowLine}` };
+  if (/best day/.test(s) && env.dayFor) {
+    const t = spotHit || env.spotObj;
+    let bi = 0, bd = null, bv = -1;
+    for (let i = 0; i < 30; i++) { const dd = addDays(env.today, i); const d = env.dayFor(t.id, dd); const v = d.peak * confidence(i, t); if (v > bv) { bv = v; bi = i; bd = d; } }
+    const dd = addDays(env.today, bi);
+    return { text: `Best day at ${t.name} in the next 30: ${DOW[dd.getDay()]} ${MN[dd.getMonth()]} ${dd.getDate()}, ${to10(bd.peak)}/10 at ${confidence(bi, t)}% confidence. ${bd.windows.length ? "Windows " + fmtWin(bd.windows) + "." : ""} ${bi > 15 ? "That far out the weather is climatology, recheck inside a week." : ""}` };
+  }
   if (/should i (go|fish|bother)|worth (it|going|the drive)|is it (any )?good|go or no/.test(s)) {
     const p = env.dm ? env.dm.peak : 0, c2 = env.conf;
     if (p >= 70) return { text: `Go. ${env.spotName} is a ${to10(p)}/10 at ${c2}% confidence. ${env.windowLine} ${env.tideLine}` };
@@ -1547,7 +1640,7 @@ function localAnswer(q, env) {
     if (d) return { text: `${spotHit.name} (${spotHit.area}): ${to10(d.peak)}/10 today, ${d.windows.length ? "window " + d.windows.map(([a, b]) => `${a > 12 ? a - 12 : a}${a >= 12 ? "p" : "a"} to ${b > 12 ? b - 12 : b}${b >= 12 ? "p" : "a"}`).join(", ") : "no strong window"}. ${spotHit.brief.read} Prime: ${spotHit.brief.prime}`, pickId: spotHit.id };
   }
   if (spotHit) return { text: `${spotHit.name} (${spotHit.area}): ${spotHit.brief.read} The move: ${spotHit.brief.cast} Prime: ${spotHit.brief.prime}`, pickId: spotHit.id };
-  if (has(/\b(where|best spot|today|tonight|this morning|go)\b/) && env.ranking && env.ranking.length) {
+  if (/where|which spot|best (spot|bet|water)|somewhere|other spot|instead/.test(s) && env.ranking && env.ranking.length) {
     const top = env.ranking[0];
     return { text: `The call for ${SPX[env.sp].short.toLowerCase()}s today is ${top.spot.name} (${top.spot.area}), ${to10(top.peak)}/10. ${whyLine(top.spot, env.sp, env.date, top.best)} Backup: ${env.ranking[1] ? env.ranking[1].spot.name : "none scoring"}.`, pickId: top.spot.id };
   }
@@ -1605,7 +1698,15 @@ function App() {
   const [tides, setTides] = useState({});      // station -> events
   const [wx, setWx] = useState({});            // cid -> {windByDate, dirByDate, cloudByDate, sun}
   const [sst, setSst] = useState({});          // cid -> {byDate}
-  const [chat, setChat] = useState({ open: false, msgs: [{ me: false, t: "I'm the head guide here. Fifty seasons of tribal knowledge on call: spots, seasons, flies, colors, tides. Ask me anything about the water." }] });
+  const [chat, setChat] = useState({ open: false, msgs: [] });
+  const [showLib, setShowLib] = useState(false);
+  const openChat = () => {
+    setChat((c) => {
+      if (c.open) return { ...c, open: false };
+      const intro = { me: false, t: `You're on ${spot.name}, ${dm ? to10(dm.peak) : "?"}/10 for ${SPX[sp].short.toLowerCase()}s ${iso(date) === iso(today) ? "today" : DOW[date.getDay()]}. Ask me why the score is what it is, the windows, what fly right now, whether to wade or bail, or where else within range.` };
+      return { open: true, msgs: c.msgs.length === 0 ? [intro] : [...c.msgs, intro] };
+    });
+  };
   const [draft, setDraft] = useState("");
   const endRef = useRef(null);
 
@@ -1736,7 +1837,9 @@ function App() {
 
   const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); };
   const applyNear = (lbl, la, lo) => {
-    const items = nearestSpots(la, lo, 6);
+    const sorted = nearestSpots(la, lo, SPOTS.length);
+    const close = sorted.filter((x) => x.mi <= 30);
+    const items = close.length >= 4 ? close.slice(0, 10) : sorted.slice(0, 6);
     setNearby({ label: lbl, items });
     items.forEach(({ s }) => fetchStation(s.station));
     if (items[0]) { jumpToSpot(items[0].s); setShowV(true); }
@@ -1785,7 +1888,11 @@ function App() {
     const nx = (ctxToday.events || []).filter((e) => e.date > now).slice(0, 2).map((e) => `${e.hl === "H" ? "high" : "low"} ${clock(e.date)}`).join(", ");
     const tideLine = nx ? `Next tides: ${nx}.` : "No tide feed for this water.";
     const explainLine = dm ? `${spot.name} is ${to10(dm.peak)}/10 today. ${strong.length ? "Working for you: " + strong.join(", ") + "." : ""} ${weak.length ? "Holding it back: " + weak.join(", ") + "." : "Nothing major against it, the ceiling is just the season."} ${windowLine}` : "Still pulling data, ask me in a second.";
-    const env = { cid, sp, date, ranking, board, dm, dmById, cond: condLine, spotName: spot.name, spotObj: spot, today, conf, explainLine, windowLine, tideLine,
+    const statusLine = dm ? `${spot.name} right now: ${to10(dm.peak)}/10 at ${conf}% confidence for ${SPX[sp].short.toLowerCase()}s, water ${ctxToday.sst}F. ${windowLine} ${tideLine}` : "Still pulling data, ask me in a second.";
+    const nb = blockOfHour(now.getHours());
+    const ft = rankFlies(sp, nb, clarityFor(ctxToday));
+    const flyLine = ft.length ? `Right now (${nb}, water reads ${clarityFor(ctxToday)}): 1) ${ft[0].f.n} ${ft[0].f.sz}, ${ft[0].f.why.toLowerCase()}. ${ft[1] ? "2) " + ft[1].f.n + " " + ft[1].f.sz + ". " : ""}${ft[2] ? "3) " + ft[2].f.n + " " + ft[2].f.sz + "." : ""}` : SPX[sp].flies;
+    const env = { cid, sp, date, ranking, board, dm, dmById, cond: condLine, spotName: spot.name, spotObj: spot, today, conf, explainLine, windowLine, tideLine, statusLine, flyLine,
       rankFor: (dd) => spots.map((x) => ({ spot: x, ...computeDay(x, sp, dd, ctxFor(dd, x)) })).sort((a, z) => z.peak - a.peak),
       dayFor: (sid, dd) => { const x = (sid && SPOTS.find((y) => y.id === sid)) || spot; return computeDay(x, sp, dd, ctxFor(dd, x)); } };
     if (CFG.CHAT_ENDPOINT) {
@@ -1808,12 +1915,59 @@ function App() {
 
   const vlist = showV ? verdicts(cid, date) : [];
   const svg = dm && ctxToday.events ? (() => {
-    const w = 320, hh = 84; const t0 = new Date(date); t0.setHours(4); const t1 = new Date(date); t1.setHours(23);
+    const W = 340, H = 150, topPad = 24, botPad = 26;
+    const t0 = new Date(date); t0.setHours(4, 0, 0, 0); const t1 = new Date(date); t1.setHours(23, 0, 0, 0);
+    const x = (t) => ((t - t0) / (t1 - t0)) * W;
     const pts = [];
-    for (let i = 0; i <= 60; i++) { const t = new Date(t0.getTime() + (t1 - t0) * i / 60); const ts = tideStateAt(ctxToday.events, t); pts.push(ts ? ts.h : 0); }
-    const mn = Math.min(...pts), mx = Math.max(...pts);
-    const path = pts.map((v, i) => `${i === 0 ? "M" : "L"}${(i / 60 * w).toFixed(1)},${(hh - 8 - (v - mn) / (mx - mn || 1) * (hh - 20)).toFixed(1)}`).join(" ");
-    return <svg viewBox={`0 0 ${w} ${hh}`} style={{ width: "100%", height: hh }}><path d={path} fill="none" stroke={C.water} strokeWidth="2.5" /><line x1={0} x2={w} y1={hh - 8} y2={hh - 8} stroke={C.line} /></svg>;
+    for (let i = 0; i <= 76; i++) { const t = new Date(t0.getTime() + (t1 - t0) * i / 76); const ts = tideStateAt(ctxToday.events, t); pts.push({ t, v: ts ? ts.h : 0 }); }
+    const mn = Math.min(...pts.map(p => p.v)) - 0.2, mx = Math.max(...pts.map(p => p.v)) + 0.2;
+    const y = (v) => topPad + (1 - (v - mn) / (mx - mn || 1)) * (H - topPad - botPad);
+    const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+    const hrs = [6, 9, 12, 15, 18, 21];
+    const evs = ctxToday.events.filter((e) => e.date >= t0 && e.date <= t1);
+    const sunT = ctxToday.sun ? [{ t: ctxToday.sun.rise, l: "SR" }, { t: ctxToday.sun.set, l: "SS" }].filter((s2) => s2.t >= t0 && s2.t <= t1) : [];
+    const isToday = iso(date) === iso(today);
+    const nowX = isToday && now >= t0 && now <= t1 ? x(now) : null;
+    const nowTs = nowX != null ? tideStateAt(ctxToday.events, now) : null;
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
+        {hrs.map((h2) => { const t = new Date(date); t.setHours(h2, 0, 0, 0); const xx = x(t); return (
+          <g key={h2}>
+            <line x1={xx} x2={xx} y1={topPad - 4} y2={H - botPad + 4} stroke={C.line} strokeWidth="1" />
+            <text x={xx} y={H - 8} textAnchor="middle" fill={C.dim} fontSize="9" fontFamily="IBM Plex Mono">{h2 > 12 ? h2 - 12 : h2}{h2 >= 12 ? "p" : "a"}</text>
+          </g>
+        ); })}
+        {dm.windows.map(([a, b2], i) => { const ta = new Date(date); ta.setHours(a, 0, 0, 0); const tb = new Date(date); tb.setHours(b2 + 1, 0, 0, 0); const xa = Math.max(0, x(ta)), xb = Math.min(W, x(tb)); return (
+          <g key={"w" + i}>
+            <rect x={xa} y={topPad - 4} width={xb - xa} height={H - topPad - botPad + 8} fill={C.blaze} opacity="0.13" />
+            <line x1={xa} x2={xa} y1={topPad - 4} y2={H - botPad + 4} stroke={C.blaze} strokeWidth="1" opacity="0.5" />
+            <line x1={xb} x2={xb} y1={topPad - 4} y2={H - botPad + 4} stroke={C.blaze} strokeWidth="1" opacity="0.5" />
+            <text x={(xa + xb) / 2} y={12} textAnchor="middle" fill={C.blaze} fontSize="8.5" fontFamily="IBM Plex Mono">BITE {a > 12 ? a - 12 : a}{a >= 12 ? "P" : "A"}-{b2 > 12 ? b2 - 12 : b2}{b2 >= 12 ? "P" : "A"}</text>
+          </g>
+        ); })}
+        <path d={path} fill="none" stroke={C.water} strokeWidth="2.5" />
+        {evs.map((e, i) => (
+          <g key={"e" + i}>
+            <circle cx={x(e.date)} cy={y(e.v)} r="3" fill={C.stone} />
+            <text x={x(e.date)} y={e.hl === "H" ? y(e.v) - 14 : y(e.v) + 14} textAnchor="middle" fill={C.stone} fontSize="9" fontFamily="IBM Plex Mono">{e.hl === "H" ? "HIGH" : "LOW"} {clock(e.date)}</text>
+            <text x={x(e.date)} y={e.hl === "H" ? y(e.v) - 5 : y(e.v) + 24} textAnchor="middle" fill={C.dim} fontSize="8" fontFamily="IBM Plex Mono">{e.v.toFixed(1)}ft</text>
+          </g>
+        ))}
+        {sunT.map((s2, i) => (
+          <g key={"s" + i}>
+            <line x1={x(s2.t)} x2={x(s2.t)} y1={topPad - 4} y2={topPad + 6} stroke={C.moss} strokeWidth="2" />
+            <text x={x(s2.t)} y={topPad + 16} textAnchor="middle" fill={C.moss} fontSize="8" fontFamily="IBM Plex Mono">{s2.l} {clock(s2.t)}</text>
+          </g>
+        ))}
+        {nowX != null && (
+          <g>
+            <line x1={nowX} x2={nowX} y1={topPad - 4} y2={H - botPad + 4} stroke={C.bone} strokeWidth="1" strokeDasharray="3,3" opacity="0.8" />
+            {nowTs && <circle cx={nowX} cy={y(nowTs.h)} r="4" fill={C.blaze} />}
+            <text x={nowX} y={H - 18} textAnchor="middle" fill={C.bone} fontSize="8" fontFamily="IBM Plex Mono">NOW</text>
+          </g>
+        )}
+      </svg>
+    );
   })() : null;
 
   return (
@@ -2033,6 +2187,30 @@ function App() {
             )}
           </div>
 
+          <div style={card}>
+            <div style={label}>The fly box · {SPX[sp].short} · ranked for {DOW[date.getDay()]} {MN[date.getMonth()]} {date.getDate()}</div>
+            <div style={{ fontFamily: F.mono, fontSize: 11, color: clarityFor(ctxToday) === "stained" ? C.blaze : C.moss, marginBottom: 10 }}>
+              {clarityFor(ctxToday) === "stained" ? "WATER READS STAINED TODAY: LOUD, DARK, AND FLASH WIN" : "WATER READS CLEAR TODAY: NATURAL, SLIM, AND TRANSLUCENT WIN"}
+            </div>
+            {[["Dawn", "dawn"], ["Midday", "day"], ["Dusk", "dusk"], ["Night", "night"]].map(([lbl2, blk]) => {
+              const top = rankFlies(sp, blk, clarityFor(ctxToday));
+              return (
+                <div key={blk} style={{ marginBottom: 10 }}>
+                  <div style={{ fontFamily: F.mono, fontSize: 10, color: C.moss, letterSpacing: 1, textTransform: "uppercase" }}>{lbl2}</div>
+                  {top.map(({ f }, i) => (
+                    <div key={f.n} style={{ display: "flex", gap: 8, alignItems: "baseline", marginTop: 4 }}>
+                      <div style={{ ...h, fontSize: 15, color: i === 0 ? C.blaze : C.stone, minWidth: 16 }}>{i + 1}</div>
+                      <div style={{ fontSize: 13.5, lineHeight: 1.4 }}>
+                        <span style={{ fontWeight: 600, color: C.bone }}>{f.n} {f.sz}</span>
+                        <span style={{ color: C.dim }}> · {f.why}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+
           {ranking.length > 1 && (
             <div style={card}>
               <div style={label}>The milk run · backups</div>
@@ -2046,20 +2224,25 @@ function App() {
             </div>
           )}
 
-          <div style={{ ...card, background: "transparent" }}>
-            <div style={label}>The library & the law</div>
-            <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>
+          <div style={{ ...card, background: "transparent", padding: 0 }}>
+            <button onClick={() => setShowLib(!showLib)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", color: C.dim, padding: 16, cursor: "pointer" }}>
+              <span style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, textTransform: "uppercase" }}>The library & the law</span>
+              <span style={{ fontFamily: F.mono, fontSize: 12 }}>{showLib ? "HIDE" : "SHOW"}</span>
+            </button>
+            {showLib && (
+            <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, padding: "0 16px 16px" }}>
               Knowledge distilled from the canon: {KB.canon.slice(0, 5).join("; ")}, and a thousand hours of dock talk.
               <br /><br />Regs change yearly, check before you fish: {cor.regs.map((r, i) => <span key={i}><a href={r.u} target="_blank" rel="noopener" style={{ color: C.moss }}>{r.n}</a>{i < cor.regs.length - 1 ? " · " : ""}</span>)}
               <br /><br />{cor.accessLaw}
               <br /><br /><span style={{ fontFamily: F.mono, fontSize: 10.5 }}>Scores are a planning aid, not a promise. Tides: NOAA. Weather: Open-Meteo. Not for navigation.</span>
             </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* chat */}
-      <button onClick={() => setChat((c) => ({ ...c, open: !c.open }))}
+      <button onClick={openChat}
         style={{ position: "fixed", right: 16, bottom: 16, zIndex: 60, background: C.blaze, color: C.ink, border: "none", borderRadius: 28, padding: "14px 18px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.45)" }}>
         {chat.open ? "CLOSE" : "ASK THE GUIDE"}
       </button>
