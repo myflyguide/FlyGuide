@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>FlyGuide: the guide's call, every day, 30 days out</title>
+<meta name="description" content="Fly fishing intelligence for striped bass, false albacore, tarpon, snook, redfish, and bonefish. Daily scores, 30-day outlook with honest confidence, tribal knowledge chat guide." />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#14181A" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="data/spots.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #14181A; }
+  * { -webkit-tap-highlight-color: transparent; }
+  ::selection { background: #E8722A44; }
+  .noscroll::-webkit-scrollbar { display: none; }
+  .noscroll { scrollbar-width: none; }
+  input::placeholder { color: #6E7A72; }
+  button { font-family: inherit; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------- theme ---------- */
+const C = {
+  ink: "#14181A", panel: "#1C2224", panel2: "#20282B", line: "#2E3639", tile: "#242C2F",
+  bone: "#EAE5D8", stone: "#C9C2B0", dim: "#8D978F", moss: "#7C8B66", mossDeep: "#55613F",
+  blaze: "#E8722A", blazeSoft: "#E8722A22", water: "#4E7580", danger: "#C4543B", ok: "#9DB07C"
+};
+const F = { disp: "'Barlow Condensed', sans-serif", body: "'Barlow', sans-serif", mono: "'IBM Plex Mono', monospace" };
+
+/* ---------- data handles ---------- */
+const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDORS, SPOTS = window.FG_SPOTS, KB = window.FG_KB;
+const corrById = (id) => CORR.find((c) => c.id === id) || CORR[0];
+const MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MNF = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+/* ---------- utils ---------- */
+const pad = (n) => String(n).padStart(2, "0");
+const ymd = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const dayStart = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const clock = (d) => { let h = d.getHours(), m = pad(d.getMinutes()), ap = h >= 12 ? "p" : "a"; h = h % 12 || 12; return `${h}:${m}${ap}`; };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerpArr = (arr, date) => {
+  const m = date.getMonth();
+  const dim = new Date(date.getFullYear(), m + 1, 0).getDate();
+  const f = (date.getDate() - 0.5) / dim;
+  if (f < 0.5) { const p = arr[(m + 11) % 12]; return p + (arr[m] - p) * (f + 0.5); }
+  const n = arr[(m + 1) % 12]; return arr[m] + (n - arr[m]) * (f - 0.5);
+};
+const moonPhase = (d) => { const syn = 29.53058867; const ref = new Date(Date.UTC(2000, 0, 6, 18, 14)); const days = (d - ref) / 86400000; return ((days % syn) + syn) % syn / syn; };
+const moonName = (p) => p < 0.03 || p > 0.97 ? "New moon" : p < 0.22 ? "Waxing crescent" : p < 0.28 ? "First quarter" : p < 0.47 ? "Waxing gibbous" : p < 0.53 ? "Full moon" : p < 0.72 ? "Waning gibbous" : p < 0.78 ? "Last quarter" : "Waning crescent";
+const gmapsDir = (la, lo) => `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;
+const to10 = (s) => Math.max(1, Math.round(s / 10));
+
+/* ---------- engine ---------- */
+const seasonalFor = (cid, sp, date) => { const c = corrById(cid); const a = c.seasonal[sp]; return a ? lerpArr(a, date) : 0; };
+const tempComfort = (sp, sst) => {
+  const t = SPX[sp].temp;
+  if (sst <= t.min || sst >= t.max) return 0.15;
+  if (sst < t.lo) return 0.15 + 0.85 * (sst - t.min) / (t.lo - t.min);
+  if (sst <= t.hi) return 1;
+  return 1 - 0.7 * (sst - t.hi) / (t.max - t.hi);
+};
+const tideStateAt = (events, t) => {
+  if (!events || events.length < 2) return null;
+  let prev = null, next = null;
+  for (let i = 0; i < events.length; i++) { if (events[i].date <= t) prev = events[i]; else { next = events[i]; break; } }
+  if (!prev || !next) return null;
+  const span = next.date - prev.date, f = (t - prev.date) / span;
+  const h = prev.v + (next.v - prev.v) * (1 - Math.cos(Math.PI * f)) / 2;
+  const rate = Math.sin(Math.PI * f); // 0 at slack, 1 mid-swing
+  const rising = next.v > prev.v;
+  return { h, rate, rising, prev, next };
+};
+const tideFactor = (pref, ts) => {
+  if (!ts) return 0.85;
+  const mv = 0.6 + 0.5 * ts.rate; // 0.6 slack to 1.1 full swing
+  if (pref === "incoming") return ts.rising ? mv * 1.02 : 0.62 + 0.25 * ts.rate;
+  if (pref === "outgoing") return !ts.rising ? mv * 1.02 : 0.62 + 0.25 * ts.rate;
+  if (pref === "moving") return mv;
+  return 0.85 + 0.15 * ts.rate;
+};
+const windFactor = (spot, sp, spd, dir) => {
+  let f = spd <= 8 ? 1 : spd <= 12 ? 0.94 : spd <= 16 ? 0.84 : spd <= 22 ? 0.68 : 0.5;
+  if (dir != null && spot.expo != null) {
+    let diff = Math.abs(((dir - ((spot.expo + 180) % 360)) + 540) % 360 - 180);
+    const onshore = diff < 60;
+    if (onshore && spd > 10) f *= spot.sight ? 0.85 : 0.95;
+  }
+  if (sp === "albie" && spd > 14) f *= 0.8; // they want clean water
+  return f;
+};
+const sightIndex = (spot, hour, sun, cloud, spd) => {
+  if (!spot.sight) return 1;
+  const noon = sun ? (sun.rise.getHours() + sun.set.getHours()) / 2 : 12.5;
+  const off = Math.abs(hour - noon);
+  const win = off <= 2.5 ? 1 : off <= 4 ? 0.8 : off <= 5.5 ? 0.55 : 0.35;
+  const cl = 1 - 0.5 * ((cloud == null ? 45 : cloud) / 100);
+  const chop = spd <= 8 ? 1 : spd <= 12 ? 0.9 : spd <= 16 ? 0.72 : 0.55;
+  return clamp(0.35 + 0.85 * win * cl * chop, 0.35, 1.15);
+};
+const lightFactor = (sp, hour, sun) => {
+  const s = SPX[sp];
+  const rise = sun ? sun.rise.getHours() + sun.rise.getMinutes() / 60 : 6, set = sun ? sun.set.getHours() + sun.set.getMinutes() / 60 : 19;
+  const dawn = hour >= rise - 1 && hour <= rise + 2, dusk = hour >= set - 2 && hour <= set + 1;
+  const night = hour < rise - 1 || hour > set + 1;
+  if (s.lowLight) return dawn || dusk ? 1.15 : night ? 1.05 : 0.85;
+  return dawn || dusk ? 0.95 : night ? 0.35 : 1;
+};
+const moonFactor = (sp, date) => {
+  if (sp !== "tarpon") return 1;
+  const m = date.getMonth(); if (m < 3 || m > 6) return 1;
+  const p = moonPhase(date); const nearMoon = p < 0.07 || p > 0.93 || Math.abs(p - 0.5) < 0.07;
+  return nearMoon ? 1.12 : 1;
+};
+const modeFactor = (spot, mode) => {
+  const w = spot.wade.r.toLowerCase();
+  if (mode === "wade") { if (w.startsWith("no")) return 0.35; if (w.startsWith("bank")) return 0.85; return 1; }
+  if (!spot.boat || (!spot.boat.ramps.length && !spot.boat.drops.length)) return 0.85;
+  return 1.03;
+};
+const wadeGate = (spot, ts, ctx) => {
+  if (!ts || !ctx || ctx.hHi <= ctx.hLo) return 1;
+  const f = clamp((ts.h - ctx.hLo) / (ctx.hHi - ctx.hLo), 0, 1);
+  const b = spot.wade.best;
+  if (b === "low") return f < 0.35 ? 1.05 : f < 0.6 ? 0.92 : 0.7;
+  if (b === "high") return f > 0.65 ? 1.05 : f > 0.4 ? 0.92 : 0.72;
+  if (b === "mid") return f > 0.3 && f < 0.7 ? 1.03 : 0.86;
+  return 1;
+};
+function scoreAt(spot, sp, t, ctx) {
+  const w = (spot.sp && spot.sp[sp]) || 0; if (!w) return { score: 0 };
+  const hour = t.getHours() + t.getMinutes() / 60;
+  const seas = seasonalFor(spot.c, sp, t);
+  const temp = tempComfort(sp, ctx.sst);
+  const ts = tideStateAt(ctx.events, t);
+  const tide = tideFactor(spot.tidePref, ts);
+  const hr = t.getHours();
+  const spd = ctx.windByHour[hr] != null ? ctx.windByHour[hr] : ctx.windClimo;
+  const dir = ctx.dirByHour[hr];
+  const cloud = ctx.cloudByHour[hr];
+  const wind = windFactor(spot, sp, spd, dir);
+  const light = lightFactor(sp, hour, ctx.sun);
+  const sight = sightIndex(spot, hour, ctx.sun, cloud, spd);
+  const moon = moonFactor(sp, t);
+  const gate = ctx.mode === "wade" ? wadeGate(spot, ts, ctx) : 1;
+  const modeF = modeFactor(spot, ctx.mode);
+  const raw = 100 * w * seas * temp * tide * wind * light * sight * moon * gate * modeF;
+  return { score: clamp(Math.round(raw), 0, 100), seas, temp, tide, wind, light, sight, ts, spd };
+}
+function computeDay(spot, sp, date, ctx) {
+  const hLo = ctx.events && ctx.events.length ? Math.min(...ctx.events.filter(e => Math.abs(e.date - date) < 86400000 * 1.2).map(e => e.v)) : 0;
+  const hHi = ctx.events && ctx.events.length ? Math.max(...ctx.events.filter(e => Math.abs(e.date - date) < 86400000 * 1.2).map(e => e.v)) : 1;
+  const c2 = { ...ctx, hLo, hHi };
+  let peak = 0, peakT = null, hourly = [], best = null;
+  for (let h = 5; h <= 22; h++) {
+    const t = new Date(date); t.setHours(h, 30, 0, 0);
+    const r = scoreAt(spot, sp, t, c2);
+    hourly.push({ h, score: r.score });
+    if (r.score > peak) { peak = r.score; peakT = t; best = r; }
+  }
+  const windows = [];
+  let start = null;
+  hourly.forEach(({ h, score }, i) => {
+    const on = score >= 55;
+    if (on && start == null) start = h;
+    if ((!on || i === hourly.length - 1) && start != null) { windows.push([start, on ? h : h - 1]); start = null; }
+  });
+  return { peak, peakT, hourly, windows, best };
+}
+const whyLine = (spot, sp, date, r) => {
+  const s = SPX[sp]; const m = date.getMonth();
+  const seas = r && r.seas != null ? r.seas : seasonalFor(spot.c, sp, date);
+  let a = seas >= 0.8 ? `Prime ${MNF[m]} for ${s.short.toLowerCase()}s here` : seas >= 0.5 ? `Solid ${MNF[m]} window` : seas >= 0.25 ? `Shoulder season, pick your days` : `Off season for ${s.short.toLowerCase()}s, this is a scouting score`;
+  let b = spot.bait ? ` Bait watch: ${spot.bait.split(".")[0].toLowerCase()}.` : "";
+  return a + "." + b;
+};
+const confidence = (dayOffset, spot) => {
+  const tideC = spot.station ? (spot.lag ? 0.88 : 0.96) : (CFG.WORLDTIDES_KEY ? 0.9 : 0.5);
+  const wxC = dayOffset <= 2 ? 0.92 : dayOffset <= 5 ? 0.84 : dayOffset <= 10 ? 0.7 : dayOffset <= 15 ? 0.56 : 0.36;
+  return Math.round(100 * (0.35 * tideC + 0.45 * wxC + 0.2 * 0.8));
+};
+const confLabel = (c) => c >= 85 ? "Locked in" : c >= 70 ? "Solid" : c >= 55 ? "Lean" : "Directional";
+
+/* ---------- species verdicts for search ---------- */
+const verdicts = (cid, date) => {
+  const c = corrById(cid);
+  return Object.keys(SPX).map((sp) => {
+    const arr = c.seasonal[sp];
+    if (!arr) return { sp, label: "Not this water", tone: "off" };
+    const now = lerpArr(arr, date);
+    const mx = Math.max(...arr);
+    const peakMs = arr.map((v, i) => [v, i]).filter(([v]) => v >= mx * 0.85).map(([, i]) => i);
+    const range = peakMs.length ? `${MN[peakMs[0]]}${peakMs.length > 1 ? " to " + MN[peakMs[peakMs.length - 1]] : ""}` : "";
+    if (now >= 0.65) return { sp, label: "Recommended now", tone: "hot" };
+    if (now >= 0.3) return { sp, label: `In season, peaks ${range}`, tone: "ok" };
+    if (mx >= 0.3) return { sp, label: `Not likely now, best ${range}`, tone: "cool" };
+    return { sp, label: "Not this water", tone: "off" };
+  });
+};
+
+/* ---------- search suggest ---------- */
+const SP_ALIASES = { striper: ["striper", "stripers", "striped bass", "bass"], albie: ["albie", "albies", "false albacore", "albacore", "little tunny", "funny fish"], tarpon: ["tarpon", "poon", "silver king"], snook: ["snook", "linesider"], redfish: ["redfish", "reds", "red drum"], bonefish: ["bonefish", "bones", "grey ghost"] };
+const suggestFor = (qRaw) => {
+  const q = qRaw.trim().toLowerCase(); if (!q) return [];
+  const out = [];
+  if (/^\d/.test(q)) {
+    CORR.forEach((c) => { if ((c.zips || []).some((p) => p.startsWith(q) || q.startsWith(p))) out.push({ t: "place", label: q.length >= 5 ? q : "ZIP " + q + "...", sub: c.name, cid: c.id }); });
+    return out.slice(0, 6);
+  }
+  Object.keys(SP_ALIASES).forEach((sp) => { if (SP_ALIASES[sp].some((a) => a.startsWith(q) || q.startsWith(a))) out.push({ t: "sp", label: SPX[sp].name, sub: "species", sp }); });
+  CORR.forEach((c) => {
+    if (c.name.toLowerCase().includes(q)) out.push({ t: "place", label: c.name, sub: "region", cid: c.id });
+    (c.towns || []).forEach((tn) => { const k = tn.toLowerCase(); if (k.startsWith(q) || k.includes(q)) out.push({ t: "place", label: tn, sub: c.short, cid: c.id }); });
+  });
+  SPOTS.forEach((s) => { if (s.name.toLowerCase().includes(q) || (s.al || []).some((a) => a.includes(q))) out.push({ t: "spot", label: s.name, sub: s.area, cid: s.c, id: s.id }); });
+  const seen = new Set();
+  return out.filter((x) => { const k = x.t + x.label; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 7);
+};
+
+/* ---------- chat local engine ---------- */
+const spName = (sp) => SPX[sp].name.toLowerCase();
+function localAnswer(q, env) {
+  const s = q.toLowerCase();
+  const has = (re) => re.test(s);
+  const spHit = Object.keys(SP_ALIASES).find((sp) => SP_ALIASES[sp].some((a) => s.includes(a)));
+  const spotHit = SPOTS.find((x) => x.c === env.cid && (x.al || []).some((a) => s.includes(a))) || SPOTS.find((x) => (x.al || []).some((a) => s.includes(a)));
+  for (const f of KB.faq) { if (f.k.some((k) => s.includes(k))) return { text: f.a }; }
+  const sp = spHit || env.sp;
+  if (has(/\b(eat|diet|feed|feeding|bait)\b/)) {
+    let a = `${SPX[sp].name}: ${SPX[sp].diet}`;
+    if (spotHit) a += ` At ${spotHit.name}: ${spotHit.bait}`;
+    return { text: a };
+  }
+  if (has(/\b(color|colours|colors)\b/)) return { text: `${SPX[sp].colors} The old rule holds everywhere: bright day bright fly, dark day dark fly, match the bait size before you worry about anything else.` };
+  if (has(/\b(fly|flies|pattern|patterns)\b/)) return { text: `${SPX[sp].name} box: ${SPX[sp].flies}` };
+  if (has(/\b(rod|line|gear|reel|setup|leader|tippet)\b/)) return { text: `${SPX[sp].name} rig: ${SPX[sp].gear}` };
+  if (has(/\b(technique|retrieve|strip|present|how do i|how to)\b/)) return { text: `${SPX[sp].name}: ${SPX[sp].technique}` };
+  if (spotHit && env.dm) {
+    const d = env.dmById(spotHit.id);
+    if (d) return { text: `${spotHit.name} (${spotHit.area}): ${to10(d.peak)}/10 today, ${d.windows.length ? "window " + d.windows.map(([a, b]) => `${a > 12 ? a - 12 : a}${a >= 12 ? "p" : "a"} to ${b > 12 ? b - 12 : b}${b >= 12 ? "p" : "a"}`).join(", ") : "no strong window"}. ${spotHit.brief.read} Prime: ${spotHit.brief.prime}`, pickId: spotHit.id };
+  }
+  if (spotHit) return { text: `${spotHit.name} (${spotHit.area}): ${spotHit.brief.read} The move: ${spotHit.brief.cast} Prime: ${spotHit.brief.prime}`, pickId: spotHit.id };
+  if (has(/\b(where|best spot|today|tonight|this morning|go)\b/) && env.ranking && env.ranking.length) {
+    const top = env.ranking[0];
+    return { text: `The call for ${SPX[env.sp].short.toLowerCase()}s today is ${top.spot.name} (${top.spot.area}), ${to10(top.peak)}/10. ${whyLine(top.spot, env.sp, env.date, top.best)} Backup: ${env.ranking[1] ? env.ranking[1].spot.name : "none scoring"}.`, pickId: top.spot.id };
+  }
+  if (has(/\b(best day|when should|next week|this month|30 day|forecast)\b/) && env.board && env.board.length) {
+    const b = [...env.board].sort((a, z) => z.peak * z.conf - a.peak * a.conf)[0];
+    return { text: `Best bet in the next 30: ${DOW[b.date.getDay()]} ${MN[b.date.getMonth()]} ${b.date.getDate()}, scoring ${to10(b.peak)}/10 at ${b.conf}% confidence. Inside a week that number firms up, recheck before you burn the gas.` };
+  }
+  if (has(/\b(book|podcast|learn|read|library|source)\b/)) return { text: `The library behind this thing: ${KB.canon.join("; ")}. Start with Tabory if you fish the Northeast and Dick Brown if the flats call you.` };
+  if (has(/\b(tide|water temp|wind|weather|moon)\b/) && env.cond) return { text: env.cond };
+  return { text: `Ask me like you'd ask the dock: "where should I fish Saturday", "what do ${spName(env.sp)} eat in ${MNF[env.date.getMonth()]}", "what color fly in dirty water", "can I wade ${env.spotName}", "best day in the next 30". I have the whole book on ${CORR.map(c => c.short).join(", ")}.` };
+}
+
+/* ---------- App ---------- */
+function App() {
+  const today = dayStart(new Date());
+  const hash = {}; (location.hash || "").replace("#", "").split("&").forEach((p) => { const [k, v] = p.split("="); if (k) hash[k] = v; });
+  const [cid, setCid] = useState(hash.c && corrById(hash.c).id === hash.c ? hash.c : "ne");
+  const cor = corrById(cid);
+  const [sp, setSp] = useState(hash.sp && cor.species.includes(hash.sp) ? hash.sp : cor.species[0]);
+  const [mode, setMode] = useState("wade");
+  const [date, setDate] = useState(today);
+  const [spotId, setSpotId] = useState(hash.spot || null);
+  const [manual, setManual] = useState(!!hash.spot);
+  const [q, setQ] = useState("");
+  const [showV, setShowV] = useState(false);
+  const sugs = useMemo(() => suggestFor(q), [q]);
+  const [now, setNow] = useState(new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
+
+  /* fetch state */
+  const [tides, setTides] = useState({});      // station -> events
+  const [wx, setWx] = useState({});            // cid -> {windByDate, dirByDate, cloudByDate, sun}
+  const [sst, setSst] = useState({});          // cid -> {byDate}
+  const [chat, setChat] = useState({ open: false, msgs: [{ me: false, t: "I'm the head guide here. Fifty seasons of tribal knowledge on call: spots, seasons, flies, colors, tides. Ask me anything about the water." }] });
+  const [draft, setDraft] = useState("");
+  const endRef = useRef(null);
+
+  const spots = useMemo(() => SPOTS.filter((s) => s.c === cid && (s.sp[sp] || 0) > 0), [cid, sp]);
+  const spot = spots.find((s) => s.id === spotId) || spots[0] || SPOTS[0];
+
+  useEffect(() => { if (!cor.species.includes(sp)) setSp(cor.species[0]); }, [cid]);
+  const firstRun = useRef(true);
+  useEffect(() => { if (firstRun.current) { firstRun.current = false; return; } setManual(false); }, [cid, sp, mode]);
+
+  /* tide fetch per station, 32 day range */
+  useEffect(() => {
+    const st = spot.station; if (!st || tides[st]) return;
+    let alive = true;
+    const b = ymd(addDays(today, -1)), e = ymd(addDays(today, 31));
+    fetch(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=flyguide&begin_date=${b}&end_date=${e}&datum=MLLW&station=${st}&time_zone=lst_ldt&units=english&interval=hilo&format=json`)
+      .then((r) => r.json())
+      .then((j) => { if (!alive || !j.predictions) return; setTides((p) => ({ ...p, [st]: j.predictions.map((x) => ({ date: new Date(x.t.replace(" ", "T")), v: parseFloat(x.v), hl: x.type })) })); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [spot.station]);
+
+  /* Bahamas via WorldTides when keyed */
+  useEffect(() => {
+    if (spot.station || !CFG.WORLDTIDES_KEY || tides["bah:" + spot.id]) return;
+    let alive = true;
+    fetch(`https://www.worldtides.info/api/v3?extremes&lat=${spot.lat}&lon=${spot.lng}&start=${Math.floor(today / 1000)}&length=2764800&key=${CFG.WORLDTIDES_KEY}`)
+      .then((r) => r.json())
+      .then((j) => { if (!alive || !j.extremes) return; setTides((p) => ({ ...p, ["bah:" + spot.id]: j.extremes.map((x) => ({ date: new Date(x.dt * 1000), v: x.height, hl: x.type === "High" ? "H" : "L" })) })); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [spot.id]);
+
+  /* weather per corridor, 16 days */
+  useEffect(() => {
+    if (wx[cid]) return;
+    let alive = true;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${cor.lat}&longitude=${cor.lng}&hourly=wind_speed_10m,wind_direction_10m,cloud_cover&daily=sunrise,sunset&wind_speed_unit=mph&timezone=auto&forecast_days=16`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive || !j.hourly) return;
+        const windByDate = {}, dirByDate = {}, cloudByDate = {}, sun = {};
+        j.hourly.time.forEach((t, i) => {
+          const d = t.slice(0, 10), h = parseInt(t.slice(11, 13));
+          (windByDate[d] = windByDate[d] || {})[h] = j.hourly.wind_speed_10m[i];
+          (dirByDate[d] = dirByDate[d] || {})[h] = j.hourly.wind_direction_10m[i];
+          (cloudByDate[d] = cloudByDate[d] || {})[h] = j.hourly.cloud_cover[i];
+        });
+        j.daily.time.forEach((t, i) => { sun[t] = { rise: new Date(j.daily.sunrise[i]), set: new Date(j.daily.sunset[i]) }; });
+        setWx((p) => ({ ...p, [cid]: { windByDate, dirByDate, cloudByDate, sun } }));
+      }).catch(() => {});
+    return () => { alive = false; };
+  }, [cid]);
+
+  /* sst per corridor */
+  useEffect(() => {
+    if (sst[cid]) return;
+    let alive = true;
+    fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${cor.mlat}&longitude=${cor.mlng}&hourly=sea_surface_temperature&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive || !j.hourly) return;
+        const acc = {};
+        j.hourly.time.forEach((t, i) => { const d = t.slice(0, 10); (acc[d] = acc[d] || []).push(j.hourly.sea_surface_temperature[i]); });
+        const byDate = {}; Object.keys(acc).forEach((d) => { byDate[d] = Math.round(acc[d].reduce((a, b) => a + b, 0) / acc[d].length); });
+        setSst((p) => ({ ...p, [cid]: byDate }));
+      }).catch(() => {});
+    return () => { alive = false; };
+  }, [cid]);
+
+  /* context builder for a given date */
+  const ctxFor = (dd, s) => {
+    const key = iso(dd);
+    const W = wx[cid] || {};
+    const events = s.station ? tides[s.station] : tides["bah:" + s.id];
+    const shifted = events && s.lag ? events.map((e) => ({ ...e, date: new Date(e.date.getTime() + s.lag * 60000) })) : events;
+    const sstV = (sst[cid] && sst[cid][key] != null) ? sst[cid][key] : Math.round(lerpArr(cor.sstFallback, dd));
+    return {
+      events: shifted || null,
+      windByHour: (W.windByDate && W.windByDate[key]) || {},
+      dirByHour: (W.dirByDate && W.dirByDate[key]) || {},
+      cloudByHour: (W.cloudByDate && W.cloudByDate[key]) || {},
+      windClimo: lerpArr(cor.windClimo, dd),
+      sun: W.sun && W.sun[key] ? W.sun[key] : null,
+      sst: sstV, mode
+    };
+  };
+
+  const dayModels = useMemo(() => spots.map((s) => ({ spot: s, ...computeDay(s, sp, date, ctxFor(date, s)) })),
+    [spots, sp, date, mode, tides, wx, sst]);
+  const ranking = useMemo(() => [...dayModels].sort((a, b) => b.peak - a.peak), [dayModels]);
+  const topId = ranking[0] ? ranking[0].spot.id : null;
+  useEffect(() => { if (!manual && topId) setSpotId(topId); }, [topId, manual]);
+  const dm = dayModels.find((d) => d.spot.id === spot.id) || ranking[0] || null;
+  const dmById = (id) => dayModels.find((d) => d.spot.id === id);
+
+  /* 30-day board for selected spot */
+  const board = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 30; i++) {
+      const dd = addDays(today, i);
+      const m = computeDay(spot, sp, dd, ctxFor(dd, spot));
+      out.push({ date: dd, peak: m.peak, conf: confidence(i, spot) });
+    }
+    return out;
+  }, [spot.id, sp, mode, tides, wx, sst]);
+
+  const ctxToday = ctxFor(date, spot);
+  const tsNow = tideStateAt(ctxToday.events, date.getTime() === today.getTime() ? now : new Date(new Date(date).setHours(12)));
+  const moonP = moonPhase(date);
+  const dayOff = Math.round((date - today) / 86400000);
+  const conf = confidence(dayOff, spot);
+  const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
+
+  const pickPlace = (g) => { setQ(""); if (g.t === "sp") { const home = CORR.find((c) => c.species.includes(g.sp)); if (!cor.species.includes(g.sp) && home) setCid(home.id); setSp(g.sp); setShowV(false); } else { setCid(g.cid); setShowV(true); if (g.id) { setSpotId(g.id); setManual(true); } } };
+  const send = async () => {
+    const text = draft.trim(); if (!text) return;
+    setDraft("");
+    setChat((c) => ({ ...c, msgs: [...c.msgs, { me: true, t: text }] }));
+    const env = { cid, sp, date, ranking, board, dm, dmById, cond: condLine, spotName: spot.name };
+    if (CFG.CHAT_ENDPOINT) {
+      try {
+        const r = await fetch(CFG.CHAT_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: text, context: { corridor: cor.name, species: SPX[sp].name, spot: spot.name, brief: spot.brief, conditions: condLine, date: iso(date) } }) });
+        const j = await r.json();
+        if (j && j.text) { setChat((c) => ({ ...c, msgs: [...c.msgs, { me: false, t: j.text }] })); return; }
+      } catch (e) {}
+    }
+    const a = localAnswer(text, env);
+    setChat((c) => ({ ...c, msgs: [...c.msgs, { me: false, t: a.text }] }));
+    if (a.pickId) { setSpotId(a.pickId); setManual(true); }
+  };
+  useEffect(() => { if (chat.open && endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [chat]);
+
+  /* ---------- styles ---------- */
+  const card = { background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: 16 };
+  const label = { fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 };
+  const h = { fontFamily: F.disp, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 };
+
+  const vlist = showV ? verdicts(cid, date) : [];
+  const svg = dm && ctxToday.events ? (() => {
+    const w = 320, hh = 84; const t0 = new Date(date); t0.setHours(4); const t1 = new Date(date); t1.setHours(23);
+    const pts = [];
+    for (let i = 0; i <= 60; i++) { const t = new Date(t0.getTime() + (t1 - t0) * i / 60); const ts = tideStateAt(ctxToday.events, t); pts.push(ts ? ts.h : 0); }
+    const mn = Math.min(...pts), mx = Math.max(...pts);
+    const path = pts.map((v, i) => `${i === 0 ? "M" : "L"}${(i / 60 * w).toFixed(1)},${(hh - 8 - (v - mn) / (mx - mn || 1) * (hh - 20)).toFixed(1)}`).join(" ");
+    return <svg viewBox={`0 0 ${w} ${hh}`} style={{ width: "100%", height: hh }}><path d={path} fill="none" stroke={C.water} strokeWidth="2.5" /><line x1={0} x2={w} y1={hh - 8} y2={hh - 8} stroke={C.line} /></svg>;
+  })() : null;
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.ink, color: C.bone, fontFamily: F.body, paddingBottom: 90 }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "18px 16px" }}>
+
+        {/* header */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div style={{ ...h, fontSize: 34, lineHeight: 1 }}><span style={{ color: C.blaze }}>FLY</span><span style={{ color: C.bone }}>GUIDE</span></div>
+          <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1 }}>THE GUIDE'S CALL · 30 DAYS OUT</div>
+        </div>
+        <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, margin: "6px 0 14px" }}>Board recomputed {clock(now)} · live data refreshes every visit</div>
+
+        {/* search */}
+        <div style={{ position: "relative", marginBottom: 10 }}>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Town, zip, or species. Try 03885 or tarpon"
+            style={{ width: "100%", boxSizing: "border-box", background: C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "13px 14px", fontSize: 15, outline: "none", fontFamily: F.body }} />
+          {sugs.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
+              {sugs.map((g, i) => (
+                <button key={i} onClick={() => pickPlace(g)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: i ? `1px solid ${C.line}` : "none", color: C.bone, padding: "11px 14px", fontSize: 14.5, cursor: "pointer" }}>
+                  <span>{g.label}</span><span style={{ fontFamily: F.mono, fontSize: 10.5, color: g.t === "sp" ? C.blaze : C.dim, marginLeft: 10 }}>{g.sub}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* species verdicts after a place pick */}
+        {showV && (
+          <div className="noscroll" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 10, paddingBottom: 2 }}>
+            {vlist.map((v) => (
+              <button key={v.sp} onClick={() => { if (cor.species.includes(v.sp)) setSp(v.sp); }}
+                style={{ whiteSpace: "nowrap", flexShrink: 0, background: v.tone === "hot" ? C.blazeSoft : C.panel2, border: `1px solid ${v.tone === "hot" ? C.blaze : C.line}`, color: v.tone === "hot" ? C.blaze : v.tone === "off" ? C.dim : C.stone, borderRadius: 16, padding: "7px 11px", fontSize: 12, cursor: "pointer", fontFamily: F.mono }}>
+                {SPX[v.sp].short}: {v.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* corridor + species + mode */}
+        <div className="noscroll" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 8 }}>
+          {CORR.map((c) => (
+            <button key={c.id} onClick={() => { setCid(c.id); setShowV(false); }}
+              style={{ whiteSpace: "nowrap", flexShrink: 0, background: c.id === cid ? C.blaze : C.panel2, color: c.id === cid ? C.ink : C.stone, border: `1px solid ${c.id === cid ? C.blaze : C.line}`, borderRadius: 16, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{c.short}</button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 7, marginBottom: 14, flexWrap: "wrap" }}>
+          {cor.species.map((k) => (
+            <button key={k} onClick={() => setSp(k)}
+              style={{ background: k === sp ? C.mossDeep : C.panel2, color: k === sp ? C.bone : C.dim, border: `1px solid ${k === sp ? C.moss : C.line}`, borderRadius: 10, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{SPX[k].short}</button>
+          ))}
+          <div style={{ marginLeft: "auto", display: "flex", border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden" }}>
+            {["wade", "boat"].map((m) => (
+              <button key={m} onClick={() => setMode(m)} style={{ background: mode === m ? C.water : "transparent", color: mode === m ? C.bone : C.dim, border: "none", padding: "7px 13px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", fontFamily: F.mono, letterSpacing: 1 }}>{m}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* hero */}
+        {dm && (
+          <div style={{ ...card, background: `linear-gradient(160deg, ${C.panel2}, ${C.panel})`, marginBottom: 12 }}>
+            <div style={label}>{manual ? "Your pick" : "The call"} · {DOW[date.getDay()]} {MN[date.getMonth()]} {date.getDate()} · {SPX[sp].name}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+              <div>
+                <div style={{ ...h, fontSize: 30, lineHeight: 1.02 }}>{spot.name}</div>
+                <div style={{ color: C.dim, fontSize: 13.5, marginTop: 3 }}>{spot.area} · {spot.reg}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                  {spot.sight && <span style={{ fontFamily: F.mono, fontSize: 10.5, color: C.moss, border: `1px solid ${C.moss}66`, borderRadius: 6, padding: "2px 7px" }}>SIGHT FISHERY</span>}
+                  <span style={{ fontFamily: F.mono, fontSize: 10.5, color: C.stone, border: `1px solid ${C.line}`, borderRadius: 6, padding: "2px 7px" }}>{mode === "wade" ? ("WADE: " + spot.wade.r).toUpperCase() : "BOAT OPS"}</span>
+                  <span style={{ fontFamily: F.mono, fontSize: 10.5, color: conf >= 70 ? C.ok : C.stone, border: `1px solid ${C.line}`, borderRadius: 6, padding: "2px 7px" }}>{conf}% CONFIDENCE · {confLabel(conf).toUpperCase()}</span>
+                </div>
+              </div>
+              <div style={{ textAlign: "center", minWidth: 76 }}>
+                <div style={{ ...h, fontSize: 44, color: dm.peak >= 70 ? C.blaze : dm.peak >= 50 ? C.stone : C.dim, lineHeight: 1 }}>{to10(dm.peak)}</div>
+                <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim }}>OUT OF 10</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 14.5, color: C.stone, lineHeight: 1.5 }}>{whyLine(spot, sp, date, dm.best)}</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              {dm.windows.length > 0 && (
+                <div style={{ fontFamily: F.mono, fontSize: 12.5, color: C.blaze, border: `1px solid ${C.blaze}55`, background: C.blazeSoft, borderRadius: 8, padding: "7px 10px" }}>
+                  BITE {dm.windows.map(([a, b]) => `${a > 12 ? a - 12 : a}${a >= 12 ? "P" : "A"}\u2013${b > 12 ? b - 12 : b}${b >= 12 ? "P" : "A"}`).join(" · ")}
+                </div>
+              )}
+              <a href={gmapsDir(spot.lat, spot.lng)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 12.5, color: C.ink, background: C.stone, borderRadius: 8, padding: "7px 12px", textDecoration: "none", fontWeight: 600 }}>DIRECTIONS</a>
+              {manual && <button onClick={() => setManual(false)} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>BACK TO BEST</button>}
+            </div>
+          </div>
+        )}
+
+        {/* 30 day board */}
+        <div style={{ ...card, padding: "14px 12px", marginBottom: 12 }}>
+          <div style={label}>30-day board · {spot.name} · confidence decays with the forecast, tides stay true</div>
+          <div className="noscroll" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+            {board.map((b, i) => {
+              const sel = iso(b.date) === iso(date);
+              return (
+                <button key={i} onClick={() => setDate(b.date)}
+                  style={{ flexShrink: 0, width: 52, background: sel ? C.panel2 : "transparent", border: `1px solid ${sel ? C.blaze : C.line}`, borderRadius: 10, padding: "7px 4px 6px", cursor: "pointer" }}>
+                  <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>{DOW[b.date.getDay()].toUpperCase()}</div>
+                  <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone }}>{b.date.getMonth() + 1}/{b.date.getDate()}</div>
+                  <div style={{ height: 26, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "4px 0 3px" }}>
+                    <div style={{ width: 16, height: Math.max(3, b.peak / 100 * 26), background: b.peak >= 70 ? C.blaze : b.peak >= 50 ? C.moss : C.line, borderRadius: 3 }} />
+                  </div>
+                  <div style={{ fontFamily: F.disp, fontWeight: 700, fontSize: 15, color: b.peak >= 70 ? C.blaze : C.stone }}>{to10(b.peak)}</div>
+                  <div style={{ fontFamily: F.mono, fontSize: 9, color: b.conf >= 70 ? C.ok : C.dim }}>{b.conf}%</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* spot picker */}
+        <select value={spot.id} onChange={(e) => { setSpotId(e.target.value); setManual(true); }}
+          style={{ width: "100%", background: C.panel, color: C.bone, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 12px", fontSize: 14.5, marginBottom: 12, fontFamily: F.body }}>
+          {[...new Set(spots.map((s) => s.reg))].map((rg) => (
+            <optgroup key={rg} label={rg}>
+              {spots.filter((s) => s.reg === rg).map((s) => { const d = dmById(s.id); return <option key={s.id} value={s.id}>{s.name} · {d ? to10(d.peak) + "/10" : ""}</option>; })}
+            </optgroup>
+          ))}
+        </select>
+
+        {/* panels */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+
+          <div style={card}>
+            <div style={label}>Tide & sky</div>
+            {svg || <div style={{ fontSize: 13.5, color: C.dim, lineHeight: 1.5 }}>{spot.station ? "Pulling tide predictions..." : CFG.WORLDTIDES_KEY ? "Pulling WorldTides for this flat..." : "No tide station covers this water. Scores here run on season, light, and weather, honestly labeled at lower confidence. Drop a WorldTides key in data/spots.js to light up exact times."}</div>}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+              <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>WATER</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{ctxToday.sst}F {tempComfort(sp, ctxToday.sst) >= 0.9 ? "· in the slot" : tempComfort(sp, ctxToday.sst) >= 0.5 ? "· workable" : "· off"}</div>
+              </div>
+              <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>WIND</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph midday</div>
+              </div>
+              <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>MOON</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{moonName(moonP)}</div>
+              </div>
+              <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>TIDE NOW</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{tsNow ? (tsNow.rising ? "Flooding" : "Dropping") + " · next " + (tsNow.next.hl === "H" ? "high" : "low") + " " + clock(tsNow.next.date) : "No feed"}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={card}>
+            <div style={label}>The brief · {SPX[sp].short} at {spot.name}</div>
+            {[["Read the water", spot.brief.read], ["The cast", spot.brief.cast], ["Rig", spot.brief.gear], ["Prime time", spot.brief.prime], ["When it blows out", spot.brief.blowout]].map(([k, v]) => (
+              <div key={k} style={{ marginBottom: 10 }}>
+                <div style={{ fontFamily: F.mono, fontSize: 10, color: C.moss, letterSpacing: 1, textTransform: "uppercase" }}>{k}</div>
+                <div style={{ fontSize: 14.5, color: C.stone, lineHeight: 1.55, marginTop: 2 }}>{v}</div>
+              </div>
+            ))}
+            <div style={{ fontFamily: F.mono, fontSize: 11.5, color: C.dim, marginTop: 4 }}>Bait: {spot.bait}</div>
+          </div>
+
+          <div style={card}>
+            <div style={label}>{mode === "wade" ? "Access & wading" : "Boat ops"}</div>
+            {mode === "wade" ? (
+              <div style={{ fontSize: 14.5, color: C.stone, lineHeight: 1.55 }}>
+                <div><span style={{ color: C.dim }}>Access ({spot.access.v}):</span> {spot.access.n}</div>
+                <div style={{ marginTop: 8 }}><span style={{ color: C.dim }}>Wading ({spot.wade.r}{spot.wade.best !== "any" ? ", best at " + (spot.wade.best === "low" ? "lower water" : spot.wade.best === "high" ? "the top of the tide" : "mid tide") : ""}):</span> {spot.wade.n}</div>
+              </div>
+            ) : (
+              <div style={{ fontSize: 14.5, color: C.stone, lineHeight: 1.55 }}>
+                {spot.boat.ramps.length === 0 && spot.boat.drops.length === 0 && <div style={{ color: C.dim }}>Bank and wade water. Flip to wade mode for the real brief here.</div>}
+                {spot.boat.ramps.map((r, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.line}` }}>
+                    <span>Ramp: {r.n}</span>
+                    <a href={gmapsDir(r.la, r.lo)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 11.5, color: C.blaze, textDecoration: "none" }}>DIRECTIONS</a>
+                  </div>
+                ))}
+                {spot.boat.drops.map((d, i) => (
+                  <div key={i} style={{ padding: "8px 0", borderBottom: `1px solid ${C.line}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontWeight: 600 }}>Drop: {d.n}</span>
+                      <a href={gmapsDir(d.la, d.lo)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 11.5, color: C.blaze, textDecoration: "none" }}>RUN TO IT</a>
+                    </div>
+                    <div style={{ color: C.dim, fontSize: 13.5, marginTop: 3 }}>{d.note}</div>
+                  </div>
+                ))}
+                <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 8 }}>Not for navigation. Read your charts, idle the skinny stuff, give other anglers the room you'd want.</div>
+              </div>
+            )}
+          </div>
+
+          {ranking.length > 1 && (
+            <div style={card}>
+              <div style={label}>The milk run · backups</div>
+              {ranking.filter((r) => r.spot.id !== spot.id).slice(0, 2).map((r) => (
+                <button key={r.spot.id} onClick={() => { setSpotId(r.spot.id); setManual(true); }}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 12px", marginBottom: 8, cursor: "pointer", color: C.bone, textAlign: "left" }}>
+                  <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.spot.name}</div><div style={{ color: C.dim, fontSize: 12.5 }}>{r.spot.area}</div></div>
+                  <div style={{ ...h, fontSize: 22, color: r.peak >= 70 ? C.blaze : C.stone }}>{to10(r.peak)}</div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div style={{ ...card, background: "transparent" }}>
+            <div style={label}>The library & the law</div>
+            <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6 }}>
+              Knowledge distilled from the canon: {KB.canon.slice(0, 5).join("; ")}, and a thousand hours of dock talk.
+              <br /><br />Regs change yearly, check before you fish: {cor.regs.map((r, i) => <span key={i}><a href={r.u} target="_blank" rel="noopener" style={{ color: C.moss }}>{r.n}</a>{i < cor.regs.length - 1 ? " · " : ""}</span>)}
+              <br /><br />{cor.accessLaw}
+              <br /><br /><span style={{ fontFamily: F.mono, fontSize: 10.5 }}>Scores are a planning aid, not a promise. Tides: NOAA. Weather: Open-Meteo. Not for navigation.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* chat */}
+      <button onClick={() => setChat((c) => ({ ...c, open: !c.open }))}
+        style={{ position: "fixed", right: 16, bottom: 16, zIndex: 60, background: C.blaze, color: C.ink, border: "none", borderRadius: 28, padding: "14px 18px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.45)" }}>
+        {chat.open ? "CLOSE" : "ASK THE GUIDE"}
+      </button>
+      {chat.open && (
+        <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, top: "22%", zIndex: 55, background: C.panel2, borderTop: `2px solid ${C.blaze}`, borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column", maxWidth: 760, margin: "0 auto" }}>
+          <div style={{ padding: "14px 16px 8px", ...h, fontSize: 20, color: C.bone }}>THE HEAD GUIDE <span style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1, fontWeight: 400 }}>{CFG.CHAT_ENDPOINT ? "· FULL AI" : "· LOCAL KNOWLEDGE"}</span></div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "4px 16px" }}>
+            {chat.msgs.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: m.me ? "flex-end" : "flex-start", marginBottom: 8 }}>
+                <div style={{ maxWidth: "85%", background: m.me ? C.mossDeep : C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "10px 12px", fontSize: 14.5, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.t}</div>
+              </div>
+            ))}
+            <div ref={endRef} />
+          </div>
+          <div style={{ display: "flex", gap: 8, padding: "10px 16px 16px" }}>
+            {["Where Saturday?", "Fly colors now", "What do they eat?"].map((c) => (
+              <button key={c} onClick={() => { setDraft(c); }} style={{ fontFamily: F.mono, fontSize: 11, background: C.panel, color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, padding: "0 16px 18px" }}>
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Ask about spots, flies, seasons, tides..."
+              style={{ flex: 1, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", fontSize: 14.5, outline: "none", fontFamily: F.body }} />
+            <button onClick={send} style={{ background: C.blaze, color: C.ink, border: "none", borderRadius: 10, padding: "0 18px", fontWeight: 700, cursor: "pointer", fontFamily: F.disp, fontSize: 15 }}>SEND</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

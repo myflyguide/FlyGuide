@@ -1,0 +1,10 @@
+{
+  "name": "FlyGuide",
+  "short_name": "FlyGuide",
+  "description": "The guide's call, every day, 30 days out.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#14181A",
+  "theme_color": "#14181A",
+  "icons": [{ "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
