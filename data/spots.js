@@ -239,6 +239,8 @@ g.FG_SPOTS = [
   { id: "squamscott", c: "ne", reg: "NH Seacoast", name: "Squamscott River", area: "Stratham NH",
     lat: 43.0355, lng: -70.9105, sp: { striper: 1 }, water: "river", sight: false,
     station: "8423898", stName: "Fort Point NH", lag: 150, tidePref: "outgoing", expo: 0,
+    mSeason: [0,0,0.1,0.7,1,1,0.25,0.15,0.8,0.9,0.3,0], sstOff: [0,0,2,4,6,9,11,11,6,3,1,0],
+    seasonNote: "The Squamscott runs hot and dirty by mid-July and the fish leave with the herring. This is a May, June, and September fishery.",
     access: { v: "Public", n: "Chapmans Landing ramp off Route 108. Tide here runs about 2.5 hours behind the coast, the app corrects for it." },
     wade: { r: "Moderate", best: "mid", n: "Wade off the ramp at low to mid. The top of the tide floods the sod banks and turns the mud soft." },
     boat: { ramps: [{ n: "Chapmans Landing ramp", la: 43.0355, lo: -70.9110 }], drops: [] },
@@ -870,6 +872,8 @@ g.FG_SPOTS = [
   { id: "adams-point", c: "ne", reg: "NH Seacoast", name: "Adams Point", area: "Durham NH",
     lat: 43.0920, lng: -70.8650, sp: { striper: 1 }, water: "current", sight: false,
     station: "8423898", stName: "Fort Point NH", lag: 120, tidePref: "outgoing", expo: 0,
+    mSeason: [0,0,0.2,0.8,1,0.9,0.4,0.3,1,0.9,0.3,0], sstOff: [0,0,1,3,5,7,9,9,5,2,1,0],
+    seasonNote: "Great Bay cooks in high summer. The narrows are a spring and fall fishery, fish the coast in August.",
     access: { v: "Public", n: "UNH Jackson Lab lot at the end of Adams Point Rd. The narrows between Little Bay and Great Bay funnel everything through one cut. Tides run about two hours behind the coast, corrected here." },
     wade: { r: "Moderate", best: "mid", n: "Rocky shoreline wades at lower and mid stages. The mud coves on either side will keep a boot as a souvenir." },
     boat: { ramps: [{ n: "Adams Point cartop launch", la: 43.0920, lo: -70.8660 }], drops: [] },
@@ -975,6 +979,8 @@ g.FG_SPOTS = [
   { id: "little-harbor", c: "ne", reg: "NH Seacoast", name: "Little Harbor", area: "New Castle NH",
     lat: 43.0620, lng: -70.7260, sp: { striper: 1 }, water: "flat", sight: true,
     station: "8423898", stName: "Fort Point NH", lag: 15, tidePref: "incoming", expo: 90,
+    mSeason: [0,0,0.2,0.7,1,1,0.8,0.45,0.7,0.6,0.2,0], sstOff: [0,0,1,2,3,5,6,6,3,1,0,0],
+    seasonNote: "The Little Harbor flat warms past comfortable by August. The sight game is May through July.",
     access: { v: "Public", n: "Park at Odiorne's north lot or the Wentworth-Coolidge mansion side. The protected flats and channel edges sit behind the Wentworth hotel." },
     wade: { r: "Easy", best: "low", n: "Firm sand and mud flats wade well on the lower half. Know where the channel is before the flood erases the edges." },
     boat: { ramps: [{ n: "Wentworth-Coolidge cartop launch", la: 43.0640, lo: -70.7350 }], drops: [] },
@@ -1080,6 +1086,8 @@ g.FG_SPOTS = [
   { id: "scorton", c: "ne", reg: "Cape Cod", name: "Scorton Creek", area: "Sandwich MA",
     lat: 41.7550, lng: -70.4300, sp: { striper: 1 }, water: "marsh", sight: false,
     station: "8443970", stName: "Boston MA", lag: 0, tidePref: "incoming", expo: 10,
+    mSeason: [0,0,0.2,0.7,1,1,0.7,0.55,0.9,0.8,0.3,0], sstOff: 4,
+    seasonNote: "Mid-summer the creek runs warm on the small tides. Fish the biggest moons or wait for September.",
     access: { v: "Public", n: "Pull-offs on Route 6A near the creek and the East Sandwich beach lot. The marsh and creek mouth are a short walk either way." },
     wade: { r: "Easy at the mouth", best: "high", n: "Sand at the mouth wades easy. Inside the marsh, fish from the firm edges, the channel mud is bottomless in spots." },
     boat: { ramps: [], drops: [] },
@@ -1215,6 +1223,8 @@ g.FG_SPOTS = [
   { id: "ct-river", c: "ne", reg: "Connecticut", name: "Connecticut River Mouth", area: "Old Lyme CT",
     lat: 41.2900, lng: -72.3500, sp: { striper: 1 }, water: "inlet", sight: false,
     station: "8461490", stName: "New London CT", lag: 15, tidePref: "outgoing", expo: 170,
+    mSeason: [0,0,0.3,0.8,1,0.9,0.5,0.5,1,1,0.5,0.1], sstOff: 3,
+    seasonNote: "High summer the river mouth slows down. The shows here are the spring runs and the fall flush.",
     access: { v: "Public", n: "Griswold Point access via the White Sand Beach end (respect the plover closures), or fish the DEEP ramp side at Great Island. The mouth bars are the game." },
     wade: { r: "Moderate", best: "low", n: "Wade the bar edges at lower stages. The main channel moves serious water and the bars shift yearly, feel your way." },
     boat: { ramps: [{ n: "Great Island state ramp", la: 41.3020, lo: -72.3490 }], drops: [] },
@@ -1301,6 +1311,22 @@ g.FG_SPOTS = [
       prime: "June and October, moving tides, dusk into dark for the fish the island is famous for.",
       blowout: "South swell hammers the outside. The Vineyard Sound side and the channel stay workable in most of it."
     }, al: ["cuttyhunk", "canapitsit", "elizabeth islands", "gosnold"] },
+
+  { id: "pierce-island", c: "ne", reg: "NH Seacoast", name: "Pierce Island", area: "Portsmouth NH",
+    lat: 43.0740, lng: -70.7420, sp: { striper: 1 }, water: "flat", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 10, tidePref: "incoming", expo: 60,
+    sstOff: 2,
+    access: { v: "Public, free", n: "City park at the end of Pierce Island Rd with a free lot and ramp, five minutes from downtown Portsmouth. The flat and the back channel are steps from the truck." },
+    wade: { r: "Careful", best: "low", n: "The flat off the southeast corner wades on the lower half with careful feet. The edges drop into serious Piscataqua current, stay on the flat, never chase a fish off it." },
+    boat: { ramps: [{ n: "Pierce Island ramp", la: 43.0740, lo: -70.7430 }], drops: [{ n: "Back channel seam", la: 43.0755, lo: -70.7390, note: "The eddy line between the island and the South End on the moving tide, small water, real fish." }] },
+    bait: "River herring through in May, silversides and shrimp pinned on the flat all season, peanut bunker stacked against it in September. The birds tell you when it is on.",
+    brief: {
+      read: "A city-park flat in the middle of the Piscataqua where the current pins bait against slack water. When terns start dropping and fish start rising off the corner, it is happening right now, not in an hour.",
+      cast: "Watch the birds and the surface first, cast second. Work the seam where the flat's slack meets the channel current, and when fish show on top, a small silverside fly swum through the melee gets eaten.",
+      gear: "8 or 9wt, floating or intermediate, silverside and shrimp flies #2 to #1, a Gurgler when they are up. The current does the retrieve half the time.",
+      prime: "Flood tide pushing bait onto the flat, dawn and dusk, May through September. Unlike the rivers, the cold Piscataqua keeps this alive through summer.",
+      blowout: "The island blocks most wind. If the flat is dead, the tide turn at Fort Constitution is ten minutes east."
+    }, al: ["pierce island", "portsmouth", "four tree"] },
 ];
 
 })(typeof window !== "undefined" ? window : globalThis);
