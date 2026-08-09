@@ -363,16 +363,15 @@ function App() {
   useEffect(() => { if (firstRun.current) { firstRun.current = false; return; } if (skipReset.current) { skipReset.current = false; return; } setManual(false); }, [cid, sp, mode]);
 
   /* tide fetch per station, 32 day range */
-  useEffect(() => {
-    const st = spot.station; if (!st || tides[st]) return;
-    let alive = true;
+  const fetchStation = (st) => {
+    if (!st || tides[st]) return;
     const b = ymd(addDays(today, -1)), e = ymd(addDays(today, 31));
     fetch(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=flyguide&begin_date=${b}&end_date=${e}&datum=MLLW&station=${st}&time_zone=lst_ldt&units=english&interval=hilo&format=json`)
       .then((r) => r.json())
-      .then((j) => { if (!alive || !j.predictions) return; setTides((p) => ({ ...p, [st]: j.predictions.map((x) => ({ date: new Date(x.t.replace(" ", "T")), v: parseFloat(x.v), hl: x.type })) })); })
+      .then((j) => { if (!j.predictions) return; setTides((p) => p[st] ? p : ({ ...p, [st]: j.predictions.map((x) => ({ date: new Date(x.t.replace(" ", "T")), v: parseFloat(x.v), hl: x.type })) })); })
       .catch(() => {});
-    return () => { alive = false; };
-  }, [spot.station]);
+  };
+  useEffect(() => { fetchStation(spot.station); }, [spot.station]);
 
   /* Bahamas via WorldTides when keyed */
   useEffect(() => {
@@ -422,19 +421,20 @@ function App() {
     return () => { alive = false; };
   }, [cid]);
 
-  /* context builder for a given date */
+  /* context builder for a given date, keyed to the spot's own corridor */
   const ctxFor = (dd, s) => {
     const key = iso(dd);
-    const W = wx[cid] || {};
+    const sc = corrById(s.c);
+    const W = wx[s.c] || {};
     const events = s.station ? tides[s.station] : tides["bah:" + s.id];
     const shifted = events && s.lag ? events.map((e) => ({ ...e, date: new Date(e.date.getTime() + s.lag * 60000) })) : events;
-    const sstV = (sst[cid] && sst[cid][key] != null) ? sst[cid][key] : Math.round(lerpArr(cor.sstFallback, dd));
+    const sstV = (sst[s.c] && sst[s.c][key] != null) ? sst[s.c][key] : Math.round(lerpArr(sc.sstFallback, dd));
     return {
       events: shifted || null,
       windByHour: (W.windByDate && W.windByDate[key]) || {},
       dirByHour: (W.dirByDate && W.dirByDate[key]) || {},
       cloudByHour: (W.cloudByDate && W.cloudByDate[key]) || {},
-      windClimo: lerpArr(cor.windClimo, dd),
+      windClimo: lerpArr(sc.windClimo, dd),
       sun: W.sun && W.sun[key] ? W.sun[key] : null,
       sst: sstV, mode
     };
@@ -447,8 +447,21 @@ function App() {
   useEffect(() => { if (!manual && topId) setSpotId(topId); }, [topId, manual]);
   const dm = dayModels.find((d) => d.spot.id === spot.id) || ranking[0] || null;
   const dmById = (id) => dayModels.find((d) => d.spot.id === id);
+  useEffect(() => { history.replaceState(null, "", `#spot=${spot.id}&c=${cid}&sp=${sp}`); }, [spot.id, cid, sp]);
+  const [copied, setCopied] = useState(false);
+  const shareSpot = () => { try { navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
 
   /* 30-day board for selected spot */
+  const nearbyModels = useMemo(() => {
+    if (!nearby) return {};
+    const out = {};
+    nearby.items.forEach(({ s }) => {
+      const k = (s.sp[sp] || 0) > 0 ? sp : Object.keys(s.sp).find((x) => s.sp[x] > 0);
+      out[s.id] = k ? { k, ...computeDay(s, k, today, ctxFor(today, s)) } : null;
+    });
+    return out;
+  }, [nearby, sp, mode, tides, wx, sst]);
+
   const board = useMemo(() => {
     const out = [];
     for (let i = 0; i < 30; i++) {
@@ -467,7 +480,12 @@ function App() {
   const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
 
   const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); };
-  const applyNear = (lbl, la, lo) => { const items = nearestSpots(la, lo, 6); setNearby({ label: lbl, items }); if (items[0]) { skipReset.current = true; setCid(items[0].s.c); setShowV(true); } };
+  const applyNear = (lbl, la, lo) => {
+    const items = nearestSpots(la, lo, 6);
+    setNearby({ label: lbl, items });
+    items.forEach(({ s }) => fetchStation(s.station));
+    if (items[0]) { jumpToSpot(items[0].s); setShowV(true); }
+  };
   const locate = async (lbl) => {
     try {
       const raw = lbl.trim();
@@ -551,6 +569,7 @@ function App() {
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <div onClick={() => { location.hash = ""; location.reload(); }} title="Reset" style={{ ...h, fontSize: 34, lineHeight: 1, cursor: "pointer", userSelect: "none" }}><span style={{ color: C.blaze }}>FLY</span><span style={{ color: C.bone }}>GUIDE</span></div>
           <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1 }}>THE GUIDE'S CALL · 30 DAYS OUT</div>
+          <button onClick={() => { location.hash = ""; location.reload(); }} style={{ marginLeft: "auto", background: "none", border: `1px solid ${C.line}`, color: C.dim, borderRadius: 8, padding: "5px 10px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer" }}>RESET</button>
         </div>
         <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, margin: "6px 0 14px" }}>Board recomputed {clock(now)} · live data refreshes every visit</div>
 
@@ -587,16 +606,22 @@ function App() {
               <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 }}>Spots near {nearby.label}</div>
               <button onClick={() => setNearby(null)} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", fontFamily: F.mono, fontSize: 10.5 }}>CLEAR</button>
             </div>
-            {nearby.items.map(({ s, mi }) => (
-              <button key={s.id} onClick={() => jumpToSpot(s)}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{s.name}</div>
-                  <div style={{ color: C.dim, fontSize: 12 }}>{s.area} · {Object.keys(s.sp).filter((k) => s.sp[k] > 0).map((k) => SPX[k].short).join(", ")}</div>
-                </div>
-                <div style={{ fontFamily: F.mono, fontSize: 12, color: C.stone }}>{Math.round(mi)} mi</div>
-              </button>
-            ))}
+            {nearby.items.map(({ s, mi }) => {
+              const n = nearbyModels[s.id];
+              return (
+                <button key={s.id} onClick={() => jumpToSpot(s)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{s.name}</div>
+                    <div style={{ color: C.dim, fontSize: 12 }}>{s.area} · {Object.keys(s.sp).filter((k) => s.sp[k] > 0).map((k) => SPX[k].short).join(", ")}</div>
+                  </div>
+                  <div style={{ textAlign: "right", minWidth: 52 }}>
+                    <div style={{ ...h, fontSize: 21, lineHeight: 1, color: n && n.peak >= 70 ? C.blaze : n && n.peak >= 50 ? C.stone : C.dim }}>{n ? to10(n.peak) : ""}<span style={{ fontSize: 11, color: C.dim }}>/10</span></div>
+                    <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 2 }}>{Math.round(mi)} mi</div>
+                  </div>
+                </button>
+              );
+            })}
             {nearby.items[0] && nearby.items[0].mi > 150 && <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 4 }}>Nothing covered within 150 miles, these are the closest calls.</div>}
           </div>
         )}
@@ -647,6 +672,7 @@ function App() {
                 </div>
               )}
               <a href={gmapsDir(spot.lat, spot.lng)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 12.5, color: C.ink, background: C.stone, borderRadius: 8, padding: "7px 12px", textDecoration: "none", fontWeight: 600 }}>DIRECTIONS</a>
+              <button onClick={shareSpot} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: copied ? C.ok : C.dim, border: `1px solid ${copied ? C.ok : C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{copied ? "COPIED" : "SHARE"}</button>
               {manual && <button onClick={() => setManual(false)} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>BACK TO BEST</button>}
             </div>
           </div>
@@ -656,12 +682,13 @@ function App() {
         <div style={{ ...card, padding: "14px 12px", marginBottom: 12 }}>
           <div style={label}>30-day board · {spot.name} · confidence decays with the forecast, tides stay true</div>
           <div className="noscroll" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
-            {board.map((b, i) => {
+            {(() => { const bestI = board.reduce((bi, x, i, arr) => (x.peak * x.conf > arr[bi].peak * arr[bi].conf ? i : bi), 0); return board.map((b, i) => {
               const sel = iso(b.date) === iso(date);
+              const best = i === bestI;
               return (
                 <button key={i} onClick={() => setDate(b.date)}
-                  style={{ flexShrink: 0, width: 52, background: sel ? C.panel2 : "transparent", border: `1px solid ${sel ? C.blaze : C.line}`, borderRadius: 10, padding: "7px 4px 6px", cursor: "pointer" }}>
-                  <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>{DOW[b.date.getDay()].toUpperCase()}</div>
+                  style={{ flexShrink: 0, width: 52, background: sel ? C.panel2 : "transparent", border: `1px solid ${sel ? C.blaze : best ? C.moss : C.line}`, borderRadius: 10, padding: "7px 4px 6px", cursor: "pointer" }}>
+                  <div style={{ fontFamily: F.mono, fontSize: 9.5, color: best ? C.moss : C.dim }}>{best ? "BEST" : DOW[b.date.getDay()].toUpperCase()}</div>
                   <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone }}>{b.date.getMonth() + 1}/{b.date.getDate()}</div>
                   <div style={{ height: 26, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "4px 0 3px" }}>
                     <div style={{ width: 16, height: Math.max(3, b.peak / 100 * 26), background: b.peak >= 70 ? C.blaze : b.peak >= 50 ? C.moss : C.line, borderRadius: 3 }} />
@@ -670,7 +697,7 @@ function App() {
                   <div style={{ fontFamily: F.mono, fontSize: 9, color: b.conf >= 70 ? C.ok : C.dim }}>{b.conf}%</div>
                 </button>
               );
-            })}
+            }); })()}
           </div>
         </div>
 
@@ -783,7 +810,8 @@ function App() {
       </button>
       {chat.open && (
         <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, top: "22%", zIndex: 55, background: C.panel2, borderTop: `2px solid ${C.blaze}`, borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column", maxWidth: 760, margin: "0 auto" }}>
-          <div style={{ padding: "14px 16px 8px", ...h, fontSize: 20, color: C.bone }}>THE HEAD GUIDE <span style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1, fontWeight: 400 }}>{CFG.CHAT_ENDPOINT ? "· FULL AI" : "· LOCAL KNOWLEDGE"}</span></div>
+          <div style={{ padding: "14px 16px 4px", ...h, fontSize: 20, color: C.bone }}>THE HEAD GUIDE <span style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1, fontWeight: 400 }}>{CFG.CHAT_ENDPOINT ? "· FULL AI" : "· LOCAL KNOWLEDGE"}</span></div>
+          <div style={{ padding: "0 16px 8px", fontFamily: F.mono, fontSize: 10.5, color: C.moss, letterSpacing: 0.5 }}>ON: {spot.name.toUpperCase()} · {dm ? to10(dm.peak) : "?"}/10 · {DOW[date.getDay()].toUpperCase()} {MN[date.getMonth()].toUpperCase()} {date.getDate()} · {SPX[sp].short.toUpperCase()}</div>
           <div style={{ flex: 1, overflowY: "auto", padding: "4px 16px" }}>
             {chat.msgs.map((m, i) => (
               <div key={i} style={{ display: "flex", justifyContent: m.me ? "flex-end" : "flex-start", marginBottom: 8 }}>

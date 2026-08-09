@@ -1188,6 +1188,66 @@ g.FG_SPOTS = [
       prime: "Moving tide bracketing low, dawn and dusk, May through October.",
       blowout: "South wind puts chop over the bar and hides the footing. The beach coves either side fish safe in the same window."
     }, al: ["penfield", "fairfield"] },
+
+  { id: "madaket", c: "ne", reg: "Cape & Islands", name: "Madaket & Eel Point", area: "Nantucket MA",
+    lat: 41.2780, lng: -70.1990, sp: { striper: 1, albie: 0.9 }, water: "beach", sight: false,
+    station: "8449130", stName: "Nantucket MA", lag: 10, tidePref: "moving", expo: 270,
+    access: { v: "Public", n: "Bike path or NRTA shuttle to Madaket, walk the beach north to Eel Point. The famous Bonito Bar sits off the point, in range on the right tides." },
+    wade: { r: "Easy sand, hard sweep", best: "any", n: "Easy sand the whole way, but the Madaket rip between Smith Point and Tuckernuck moves like a river. Knee deep is the limit, the fish are inside it anyway." },
+    boat: { ramps: [{ n: "Nantucket town ramp", la: 41.2860, lo: -70.0960 }], drops: [{ n: "Bonito Bar", la: 41.2950, lo: -70.2110, note: "The legend itself. Anchor up-tide of the bar at first light, bonito and albies run the edge August into October." }] },
+    bait: "Sand eels in the rip, silversides on the flats inside, bay anchovies when the hardtails arrive in August.",
+    brief: {
+      read: "Nantucket's wild west end. A ripping tide gap, bars that reshape every winter, bass in the sweep all season, and the Bonito Bar earning its name from August on.",
+      cast: "Fish the rip seams like moving water: up-current cast, swing, step. When bonito and albies show on the bar, small translucent flies and a two-hand strip, do not lift the rod on the eat.",
+      gear: "9 or 10wt, intermediate, sand eel flies for bass, epoxy anchovies #2 to #4 for the hardtails, real backing.",
+      prime: "June for bass in the rip, mid-August through September for bonito and albies, moving tide at dawn.",
+      blowout: "Southwest wind stacks it ugly. Great Point on the other corner of the island usually offers the lee."
+    }, al: ["madaket", "eel point", "bonito bar", "smith point"] },
+
+  { id: "cape-poge", c: "ne", reg: "Cape & Islands", name: "Cape Poge Gut", area: "Chappaquiddick, Marthas Vineyard MA",
+    lat: 41.4210, lng: -70.4520, sp: { striper: 0.9, albie: 1 }, water: "inlet", sight: false,
+    station: "8449130", stName: "Nantucket MA", lag: 30, tidePref: "moving", expo: 60,
+    access: { v: "OSV or long walk", n: "Chappy ferry, then Dike Bridge and the Trustees oversand trail to the Gut and elbow. Times here are estimates, the Gut runs on its own schedule." },
+    wade: { r: "Easy at the edges", best: "any", n: "Sand wading beside the Gut is easy, the channel itself sluices Cape Poge Bay in and out twice a day. Fish the edges, respect the middle." },
+    boat: { ramps: [{ n: "Edgartown ramp", la: 41.3900, lo: -70.5100 }], drops: [{ n: "The Gut current line", la: 41.4230, lo: -70.4500, note: "Stem the tide outside the mouth and swing the seam, the classic Vineyard bonito drill since before your reel was made." }] },
+    bait: "Silversides and sand eels flushing the bay, bay anchovies balled at the mouth from August, squid in early summer.",
+    brief: {
+      read: "The most storied hardtail water in New England. Cape Poge Bay drains through one gut, bait pours out on every tide, and bonito then albies then bass line up to collect.",
+      cast: "Position down-current of the mouth, cast into the flow, and let the fly swing through the seam. The fish patrol a beat, if a school passes without eating, they will be back in ten minutes.",
+      gear: "9wt, clear intermediate, 12ft to 16 or 20lb fluoro, Surf Candy and small squid flies. Fast hands beat fast fly lines here.",
+      prime: "Late July for bonito, September for albies and bass together, any moving tide, best at first light.",
+      blowout: "Northeast wind puts chop on the mouth. East Beach outside or the bay flats inside fish the same permit."
+    }, al: ["cape poge", "the gut", "chappy gut", "dike bridge"] },
+
+  { id: "block-island", c: "ne", reg: "Rhode Island", name: "Block Island", area: "New Shoreham RI",
+    lat: 41.1520, lng: -71.5920, sp: { striper: 1, albie: 0.7 }, water: "rocky", sight: false,
+    station: "8452660", stName: "Newport RI", lag: -20, tidePref: "moving", expo: 220,
+    access: { v: "Ferry", n: "Point Judith ferry with a bike or on foot, an hour and you're on the best bass island on the coast. Southwest Point and the boulder coves are a ride from the dock. Tide times are estimates." },
+    wade: { r: "Tricky on the rocks", best: "low", n: "Boulder fields on the southwest corner wade at lower stages with studs and care. The east side beaches are easy sand when the surf lays down." },
+    boat: { ramps: [{ n: "Galilee state ramp (mainland)", la: 41.3800, lo: -71.5060 }], drops: [{ n: "Southwest Ledge edge", la: 41.1180, lo: -71.6120, note: "The famous ledge line. Drift the rips on the moving tide, big fish water, big water manners." }] },
+    bait: "Sand eels everywhere, squid on the ledges in June, peanut bunker and anchovies wrapping the island in fall.",
+    brief: {
+      read: "A glacial pile of boulders eleven miles out with the biggest average bass in southern New England. Night tides on the southwest corner have made more 40 pound fly stories than anywhere south of the Canal.",
+      cast: "Night game: black Deceiver or big eel fly swum slow through the boulder lanes on the moving tide. Fall daylight: chase the bait balls down the east beaches, albies mixed under the bass.",
+      gear: "10wt, intermediate plus a sink tip, black flies for the dark, sand eels for the day, a headlamp you never point at the water.",
+      prime: "June and again late September through October, moving tides, night for size, dawn for numbers.",
+      blowout: "The island always has a lee, that is its gift. Southwest gale means the east beaches, north blow means the southwest corner."
+    }, al: ["block island", "new shoreham", "southwest point"] },
+
+  { id: "cuttyhunk", c: "ne", reg: "South Coast MA", name: "Cuttyhunk", area: "Gosnold MA",
+    lat: 41.4180, lng: -70.9330, sp: { striper: 1, albie: 0.4 }, water: "rocky", sight: false,
+    station: "8452660", stName: "Newport RI", lag: 20, tidePref: "moving", expo: 180,
+    access: { v: "Ferry", n: "Cuttyhunk Ferry from New Bedford, seasonal schedule, plan the tide around the boat not the other way. The whole island walks in an afternoon. Times are estimates off Newport." },
+    wade: { r: "Rocks and care", best: "low", n: "Boulder shorelines and a few gravel coves. Studded soles, daylight scouting before any night mission, and tell someone where you're fishing." },
+    boat: { ramps: [{ n: "New Bedford ramp", la: 41.6120, lo: -70.9130 }], drops: [{ n: "Canapitsit Channel", la: 41.4210, lo: -70.9220, note: "The cut between Cuttyhunk and Nashawena rips hard on every tide, swing the seams from the safe side." }] },
+    bait: "Sand eels and silversides in the coves, squid through Vineyard Sound in June, menhaden schools passing outside.",
+    brief: {
+      read: "Where American striper culture was invented. The old bass club stands fished these same boulders in the 1860s, and the fish still patrol the same white water on the same tides.",
+      cast: "Work the boulder edges and the channel seams on moving water, big profile flies swum with patience. This is pilgrimage water, fish it like you mean it.",
+      gear: "10wt, 300 to 350 grain, big Hollow Fleyes and eel flies, black at night, a stripping basket on the rocks.",
+      prime: "June and October, moving tides, dusk into dark for the fish the island is famous for.",
+      blowout: "South swell hammers the outside. The Vineyard Sound side and the channel stay workable in most of it."
+    }, al: ["cuttyhunk", "canapitsit", "elizabeth islands", "gosnold"] },
 ];
 
 })(typeof window !== "undefined" ? window : globalThis);
