@@ -28,7 +28,19 @@ Every day on the 30-day board carries a confidence percentage:
 
 So day 2 reads ~90% and day 28 reads ~40%. Treat low numbers as a lean, not a promise, and recheck inside a week.
 
-## Enable the full AI chat guide (optional)
+## Enable the full AI chat guide, no terminal needed (recommended)
+
+The built-in chat is a rules engine: fast, offline-friendly, but it does not think. To make it actual Claude, deploy the included proxy in your browser:
+
+1. Sign up free at dash.cloudflare.com, go to Workers & Pages > Create > Create Worker > Deploy
+2. Click Edit code, delete the sample, paste in the contents of `cloudflare-worker.js` from this repo, hit Deploy
+3. Worker > Settings > Variables and Secrets > Add secret named `ANTHROPIC_API_KEY` with a key from console.anthropic.com
+4. Copy the worker URL (looks like https://flyguide-chat.YOURNAME.workers.dev)
+5. In GitHub, open `data/spots.js`, click the pencil icon to edit, paste the URL between the quotes of `CHAT_ENDPOINT: ""`, commit
+
+The chat badge flips from LOCAL KNOWLEDGE to FULL AI on the next page load. If the worker ever errors, the app falls back to local answers silently. Cost: pennies, you pay Anthropic per message, Cloudflare's free tier covers the traffic.
+
+## Enable AI chat via Supabase (alternative, uses terminal)
 
 The built-in chat answers from a local knowledge engine. To upgrade it to Claude:
 

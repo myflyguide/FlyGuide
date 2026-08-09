@@ -1428,6 +1428,17 @@ const suggestFor = (qRaw) => {
 
 /* ---------- chat local engine ---------- */
 const spName = (sp) => SPX[sp].name.toLowerCase();
+const fmtWin = (ws) => ws.map(([a, b]) => `${a > 12 ? a - 12 : a}${a >= 12 ? "p" : "a"} to ${b > 12 ? b - 12 : b}${b >= 12 ? "p" : "a"}`).join(", ");
+const DAYFULL = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const parseDay = (s, today) => {
+  if (/\btoday\b|\btonight\b|this morning|this evening/.test(s)) return dayStart(today);
+  if (/\btomorrow\b/.test(s)) return addDays(dayStart(today), 1);
+  for (let i = 0; i < 7; i++) { if (new RegExp("\\b" + DAYFULL[i] + "\\b").test(s)) { const t = dayStart(today); let off = (i - t.getDay() + 7) % 7; if (off === 0) off = 7; return addDays(t, off); } }
+  const m = s.match(/\bin (\d{1,2}) days?\b/); if (m) return addDays(dayStart(today), parseInt(m[1]));
+  return null;
+};
+const MONFULL = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+const parseMonth = (s) => { for (let i = 0; i < 12; i++) { if (s.includes(MONFULL[i])) return i; } return null; };
 function localAnswer(q, env) {
   const s = q.toLowerCase();
   const has = (re) => re.test(s);
@@ -1435,9 +1446,36 @@ function localAnswer(q, env) {
   const spotHit = SPOTS.find((x) => x.c === env.cid && (x.al || []).some((a) => s.includes(a))) || SPOTS.find((x) => (x.al || []).some((a) => s.includes(a)));
   for (const f of KB.faq) { if (f.k.some((k) => s.includes(k))) return { text: f.a }; }
   const sp = spHit || env.sp;
+  const dayDate = parseDay(s, env.today);
+  const mon = parseMonth(s);
+  if (/^(hi|hey|hello|yo|sup|good morning|morning)\b/.test(s)) return { text: `Morning. Ask me real questions: "why is ${env.spotName} a ${to10(env.dm ? env.dm.peak : 50)}", "where should I fish Saturday", "what tide tonight", "what do ${spName(env.sp)}s eat in ${MONFULL[env.date.getMonth()]}". I'll give you real answers.` };
+  if (/\bwhy\b/.test(s) && (/score|rating|number|low|high|\d\s*(\/|out of)\s*10|only a/.test(s) || /why is (it|this|that)/.test(s))) return { text: env.explainLine };
+  if (/should i (go|fish|bother)|worth (it|going|the drive)|is it (any )?good|go or no/.test(s)) {
+    const p = env.dm ? env.dm.peak : 0, c2 = env.conf;
+    if (p >= 70) return { text: `Go. ${env.spotName} is a ${to10(p)}/10 at ${c2}% confidence. ${env.windowLine} ${env.tideLine}` };
+    if (p >= 50) return { text: `Worth it if you fish the window, not the whole day. ${env.spotName} is a ${to10(p)}/10. ${env.windowLine} Backup if it feels dead: ${env.ranking && env.ranking[1] ? env.ranking[1].spot.name : "check the board"}.` };
+    return { text: `I'd save the gas for a better tide. ${env.spotName} is a ${to10(p)}/10 today. ${env.explainLine} Best bet instead: ${env.ranking && env.ranking[0] ? env.ranking[0].spot.name + " at " + to10(env.ranking[0].peak) + "/10" : "scan the 30-day board"}.` };
+  }
+  if (/what tide|tide (now|today|tonight)|next (high|low)|when.*(tide|window)|what time|best time/.test(s) && !dayDate) return { text: `${env.tideLine} ${env.windowLine}` };
+  if (dayDate && Math.round((dayDate - env.today) / 86400000) > 0) {
+    const off = Math.round((dayDate - env.today) / 86400000);
+    const lbl = `${DOW[dayDate.getDay()]} ${MN[dayDate.getMonth()]} ${dayDate.getDate()}`;
+    if (off > 29) return { text: `That's past my 30-day board. Tides I could tell you a year out, weather I won't pretend about. Ask me again inside 30 days.` };
+    if (/where|best (spot|bet|water)|good/.test(s) && env.rankFor) {
+      const rk = env.rankFor(dayDate); const top = rk[0];
+      if (top) return { text: `${lbl}: the call is ${top.spot.name} (${top.spot.area}) at ${to10(top.peak)}/10, ${confidence(off, top.spot)}% confidence. ${top.windows.length ? "Windows " + fmtWin(top.windows) + "." : "No strong window, it's a grind day."} Second choice: ${rk[1] ? rk[1].spot.name + " at " + to10(rk[1].peak) : "nothing close"}.`, pickId: top.spot.id };
+    }
+    if (env.dayFor) {
+      const target = spotHit || null;
+      const d = env.dayFor(target ? target.id : null, dayDate);
+      const nm = target ? target.name : env.spotName;
+      return { text: `${nm} on ${lbl}: ${to10(d.peak)}/10 at ${confidence(off, target || env.spotObj)}% confidence. ${d.windows.length ? "Windows " + fmtWin(d.windows) + "." : "No window clears the bar."} ${off > 15 ? "That far out the weather is climatology, recheck inside a week." : ""}` };
+    }
+  }
   if (has(/\b(eat|diet|feed|feeding|bait)\b/)) {
     let a = `${SPX[sp].name}: ${SPX[sp].diet}`;
     if (spotHit) a += ` At ${spotHit.name}: ${spotHit.bait}`;
+    if (mon != null) { const v = seasonalFor(env.cid, sp, new Date(env.today.getFullYear(), mon, 15)); a += ` ${MNF[mon]} here is ${v >= 0.8 ? "prime time" : v >= 0.4 ? "a real shoulder window" : "off season, fish are thin"}.`; }
     return { text: a };
   }
   if (has(/\b(color|colours|colors)\b/)) return { text: `${SPX[sp].colors} The old rule holds everywhere: bright day bright fly, dark day dark fly, match the bait size before you worry about anything else.` };
@@ -1459,7 +1497,7 @@ function localAnswer(q, env) {
   }
   if (has(/\b(book|podcast|learn|read|library|source)\b/)) return { text: `The library behind this thing: ${KB.canon.join("; ")}. Start with Tabory if you fish the Northeast and Dick Brown if the flats call you.` };
   if (has(/\b(tide|water temp|wind|weather|moon)\b/) && env.cond) return { text: env.cond };
-  return { text: `Ask me like you'd ask the dock: "where should I fish Saturday", "what do ${spName(env.sp)} eat in ${MNF[env.date.getMonth()]}", "what color fly in dirty water", "can I wade ${env.spotName}", "best day in the next 30". I have the whole book on ${CORR.map(c => c.short).join(", ")}.` };
+  return { text: `Ask me like you'd ask the dock: "where should I fish Saturday", "why is ${env.spotName} only a ${to10(env.dm ? env.dm.peak : 50)}", "what tide tonight", "should I bother tomorrow", "what do ${spName(env.sp)}s eat in ${MONFULL[env.date.getMonth()]}", "what color fly in dirty water". I cover ${CORR.map(c => c.short).join(", ")}, every spot on the board.` };
 }
 
 /* ---------- App ---------- */
@@ -1478,6 +1516,7 @@ function App() {
   const [geoSugs, setGeoSugs] = useState([]);
   const [nearby, setNearby] = useState(null);
   const sugs = useMemo(() => suggestFor(q), [q]);
+  const allSugs = useMemo(() => [...sugs, ...geoSugs.filter((g) => !sugs.some((s) => s.label.toLowerCase() === g.label.toLowerCase()))].slice(0, 8), [sugs, geoSugs]);
   useEffect(() => {
     const qq = q.trim(); if (qq.length < 3) { setGeoSugs([]); return; }
     let alive = true;
@@ -1489,9 +1528,12 @@ function App() {
           return;
         }
         if (/^\d/.test(qq)) { setGeoSugs([]); return; }
-        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(qq)}&count=4&language=en&format=json`);
+        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(qq)}&count=8&language=en&format=json`);
         const j = await r.json(); if (!alive) return;
-        setGeoSugs((j.results || []).map((g) => ({ t: "geo", label: `${g.name}, ${g.admin1 || g.country || ""}`, sub: "place", la: g.latitude, lo: g.longitude })));
+        const res = (j.results || []).filter((g) => g.country_code === "US" || g.country_code === "BS")
+          .map((g) => ({ t: "geo", label: `${g.name}, ${g.admin1 || g.country || ""}`, sub: "place", la: g.latitude, lo: g.longitude, mi: nearestSpots(g.latitude, g.longitude, 1)[0].mi }))
+          .sort((a, b) => a.mi - b.mi).slice(0, 5);
+        setGeoSugs(res);
       } catch (e) { if (alive) setGeoSugs([]); }
     }, 300);
     return () => { alive = false; clearTimeout(t); };
@@ -1621,7 +1663,22 @@ function App() {
 
   const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); };
   const applyNear = (lbl, la, lo) => { const items = nearestSpots(la, lo, 6); setNearby({ label: lbl, items }); if (items[0]) { skipReset.current = true; setCid(items[0].s.c); setShowV(true); } };
-  const locate = async (lbl) => { try { const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(lbl.split(",")[0])}&count=1&language=en&format=json`); const j = await r.json(); const g = j.results && j.results[0]; if (g) applyNear(lbl, g.latitude, g.longitude); } catch (e) {} };
+  const locate = async (lbl) => {
+    try {
+      const raw = lbl.trim();
+      if (/^\d{5}$/.test(raw)) {
+        const r = await fetch(`https://api.zippopotam.us/us/${raw}`);
+        if (r.ok) { const j = await r.json(); const p = j.places && j.places[0]; if (p) applyNear(`${p["place name"]}, ${p["state abbreviation"]}`, parseFloat(p.latitude), parseFloat(p.longitude)); }
+        return;
+      }
+      const name = raw.split(",")[0].replace(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME)$/i, "");
+      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
+      const j = await r.json();
+      const g = (j.results || []).filter((x) => x.country_code === "US" || x.country_code === "BS")
+        .map((x) => ({ x, mi: nearestSpots(x.latitude, x.longitude, 1)[0].mi })).sort((a, b) => a.mi - b.mi)[0];
+      if (g) applyNear(`${g.x.name}, ${g.x.admin1 || g.x.country || ""}`, g.x.latitude, g.x.longitude);
+    } catch (e) {}
+  };
   const pickPlace = (g) => {
     setQ("");
     if (g.t === "geo") { applyNear(g.label, g.la, g.lo); return; }
@@ -1630,11 +1687,29 @@ function App() {
     skipReset.current = true; setCid(g.cid); setShowV(true);
     if (g.sub !== "region") locate(g.label);
   };
-  const send = async () => {
-    const text = draft.trim(); if (!text) return;
+  const send = async (forced) => {
+    const text = (forced != null ? forced : draft).trim(); if (!text) return;
     setDraft("");
     setChat((c) => ({ ...c, msgs: [...c.msgs, { me: true, t: text }] }));
-    const env = { cid, sp, date, ranking, board, dm, dmById, cond: condLine, spotName: spot.name };
+    const b = (dm && dm.best) || {};
+    const tband = SPX[sp].temp;
+    const weak = [];
+    if ((b.seas || 0) < 0.5) weak.push("the calendar (shoulder to off season here)");
+    if ((b.temp || 1) < 0.6) weak.push(`water temp (${ctxToday.sst}F against the ${tband.lo} to ${tband.hi} slot)`);
+    if ((b.tide || 1) < 0.8) weak.push("tide timing (between the good windows)");
+    if ((b.spd || 0) > 15) weak.push(`wind (${Math.round(b.spd)} mph)`);
+    if (spot.sight && (b.sight || 1) < 0.7) weak.push("sight conditions (cloud or chop on the water)");
+    const strong = [];
+    if ((b.seas || 0) >= 0.8) strong.push("prime season");
+    if ((b.temp || 0) >= 0.9) strong.push("water temp in the slot");
+    if ((b.tide || 0) >= 1) strong.push("good tide movement");
+    const windowLine = dm && dm.windows.length ? `Bite windows: ${fmtWin(dm.windows)}.` : "No hour clears the bar today, it's a grind tide.";
+    const nx = (ctxToday.events || []).filter((e) => e.date > now).slice(0, 2).map((e) => `${e.hl === "H" ? "high" : "low"} ${clock(e.date)}`).join(", ");
+    const tideLine = nx ? `Next tides: ${nx}.` : "No tide feed for this water.";
+    const explainLine = dm ? `${spot.name} is ${to10(dm.peak)}/10 today. ${strong.length ? "Working for you: " + strong.join(", ") + "." : ""} ${weak.length ? "Holding it back: " + weak.join(", ") + "." : "Nothing major against it, the ceiling is just the season."} ${windowLine}` : "Still pulling data, ask me in a second.";
+    const env = { cid, sp, date, ranking, board, dm, dmById, cond: condLine, spotName: spot.name, spotObj: spot, today, conf, explainLine, windowLine, tideLine,
+      rankFor: (dd) => spots.map((x) => ({ spot: x, ...computeDay(x, sp, dd, ctxFor(dd, x)) })).sort((a, z) => z.peak - a.peak),
+      dayFor: (sid, dd) => { const x = (sid && SPOTS.find((y) => y.id === sid)) || spot; return computeDay(x, sp, dd, ctxFor(dd, x)); } };
     if (CFG.CHAT_ENDPOINT) {
       try {
         const r = await fetch(CFG.CHAT_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: text, context: { corridor: cor.name, species: SPX[sp].name, spot: spot.name, brief: spot.brief, conditions: condLine, date: iso(date) } }) });
@@ -1669,16 +1744,16 @@ function App() {
 
         {/* header */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <div style={{ ...h, fontSize: 34, lineHeight: 1 }}><span style={{ color: C.blaze }}>FLY</span><span style={{ color: C.bone }}>GUIDE</span></div>
+          <div onClick={() => { location.hash = ""; location.reload(); }} title="Reset" style={{ ...h, fontSize: 34, lineHeight: 1, cursor: "pointer", userSelect: "none" }}><span style={{ color: C.blaze }}>FLY</span><span style={{ color: C.bone }}>GUIDE</span></div>
           <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1 }}>THE GUIDE'S CALL · 30 DAYS OUT</div>
         </div>
         <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, margin: "6px 0 14px" }}>Board recomputed {clock(now)} · live data refreshes every visit</div>
 
         {/* search */}
         <div style={{ position: "relative", marginBottom: 10 }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Town, zip, or species. Try 03885 or tarpon"
+          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { if (allSugs[0]) pickPlace(allSugs[0]); else if (q.trim().length >= 3) { const t = q; setQ(""); locate(t); } } }} placeholder="Type a town name or zip code"
             style={{ width: "100%", boxSizing: "border-box", background: C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "13px 14px", fontSize: 15, outline: "none", fontFamily: F.body }} />
-          {(() => { const all = [...sugs, ...geoSugs.filter((g) => !sugs.some((s) => s.label.toLowerCase() === g.label.toLowerCase()))].slice(0, 8); return all.length > 0 && (
+          {(() => { const all = allSugs; return all.length > 0 && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
               {all.map((g, i) => (
                 <button key={i} onClick={() => pickPlace(g)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: i ? `1px solid ${C.line}` : "none", color: C.bone, padding: "11px 14px", fontSize: 14.5, cursor: "pointer" }}>
@@ -1913,14 +1988,14 @@ function App() {
             <div ref={endRef} />
           </div>
           <div style={{ display: "flex", gap: 8, padding: "10px 16px 16px" }}>
-            {["Where Saturday?", "Fly colors now", "What do they eat?"].map((c) => (
-              <button key={c} onClick={() => { setDraft(c); }} style={{ fontFamily: F.mono, fontSize: 11, background: C.panel, color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
+            {["Where Saturday?", "Why this score?", "What tide tonight?"].map((c) => (
+              <button key={c} onClick={() => send(c)} style={{ fontFamily: F.mono, fontSize: 11, background: C.panel, color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 8, padding: "0 16px 18px" }}>
             <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Ask about spots, flies, seasons, tides..."
               style={{ flex: 1, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", fontSize: 14.5, outline: "none", fontFamily: F.body }} />
-            <button onClick={send} style={{ background: C.blaze, color: C.ink, border: "none", borderRadius: 10, padding: "0 18px", fontWeight: 700, cursor: "pointer", fontFamily: F.disp, fontSize: 15 }}>SEND</button>
+            <button onClick={() => send()} style={{ background: C.blaze, color: C.ink, border: "none", borderRadius: 10, padding: "0 18px", fontWeight: 700, cursor: "pointer", fontFamily: F.disp, fontSize: 15 }}>SEND</button>
           </div>
         </div>
       )}
