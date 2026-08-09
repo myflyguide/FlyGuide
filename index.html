@@ -549,7 +549,7 @@ function App() {
         {/* spot picker */}
         <select value={spot.id} onChange={(e) => { setSpotId(e.target.value); setManual(true); }}
           style={{ width: "100%", background: C.panel, color: C.bone, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 12px", fontSize: 14.5, marginBottom: 12, fontFamily: F.body }}>
-          {[...new Set(spots.map((s) => s.reg))].map((rg) => (
+          {(() => { const RO = ["Maine","NH Seacoast","North Shore MA","Boston Harbor","South Shore MA","Cape Cod","Cape & Islands","South Coast MA","Rhode Island","Connecticut","Long Island NY","New Jersey","North Carolina","Nature Coast","Northeast FL","East Central FL","Southeast FL","Miami","Upper Keys","Middle Keys","Lower Keys","Everglades","Southwest FL","Tampa Bay","Abaco","Grand Bahama","Andros","Eleuthera","Exuma","Long Island"]; const ix = (r) => { const i = RO.indexOf(r); return i === -1 ? 999 : i; }; return [...new Set(spots.map((s) => s.reg))].sort((a, b) => ix(a) - ix(b)); })().map((rg) => (
             <optgroup key={rg} label={rg}>
               {spots.filter((s) => s.reg === rg).map((s) => { const d = dmById(s.id); return <option key={s.id} value={s.id}>{s.name} · {d ? to10(d.peak) + "/10" : ""}</option>; })}
             </optgroup>

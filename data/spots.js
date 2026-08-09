@@ -8,7 +8,7 @@
 g.FG_CONFIG = {
   CHAT_ENDPOINT: "",      // Supabase edge function URL for the full AI guide. Empty = built-in local guide.
   WORLDTIDES_KEY: "",     // WorldTides API key for Bahamas tide times. Empty = tide-neutral scoring with honest labeling.
-  SITE_URL: "https://YOURUSER.github.io/flyguide"
+  SITE_URL: "https://benrodman44-max.github.io/FlyGuide"
 };
 
 /* ---------------- Species profiles ---------------- */
@@ -753,6 +753,441 @@ g.FG_SPOTS = [
       prime: "March through June, tide changes, mid-morning light.",
       blowout: "North wind in winter is the enemy. The creeks and the south side pine flats give shelter and honest schoolies."
     }, al: ["mcleans", "grand bahama", "east end", "deep water cay"] },
+
+  { id: "hampton-river", c: "ne", reg: "NH Seacoast", name: "Hampton River Mouth", area: "Hampton NH",
+    lat: 42.8970, lng: -70.8090, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 10, tidePref: "outgoing", expo: 95,
+    access: { v: "Public", n: "Park at the state pier side off Route 1A or the Seabrook dunes lots south of the bridge. The jetties and the beach corners are the fly water." },
+    wade: { r: "Moderate", best: "any", n: "Wade the beach edges and the inside flats. Never wade near the channel, the outgoing through the jetties moves like a river in flood." },
+    boat: { ramps: [{ n: "Hampton Harbor state ramp", la: 42.8990, lo: -70.8180 }], drops: [{ n: "Jetty rip seam", la: 42.8960, lo: -70.8060, note: "Hold outside the tips on the outgoing and work the seam where marsh water meets ocean." }] },
+    bait: "Silversides and shrimp flushing every outgoing, sand eels on the beach bars, peanut bunker pouring out in September.",
+    brief: {
+      read: "The whole Hampton-Seabrook marsh drains through one set of jetties. Every outgoing tide is a conveyor belt of bait, and the bass wait at the tips and the beach corners to collect it.",
+      cast: "From the rocks, cast up-current into the flow and let the fly swing out the seam like the real thing. On the beach corners, work the wash at first light before the crowds.",
+      gear: "9wt, intermediate or 300 grain in the current, silverside and shrimp patterns #2 to 1/0, white Deceiver at night.",
+      prime: "Last three hours of outgoing overlapping dawn or dusk, June through September.",
+      blowout: "Big east swell makes the jetties dangerous and dirty. Slide inside the harbor and fish the marsh edges on the same tide."
+    }, al: ["hampton", "seabrook", "hampton harbor"] },
+
+  { id: "rye-harbor", c: "ne", reg: "NH Seacoast", name: "Rye Harbor", area: "Rye NH",
+    lat: 43.0000, lng: -70.7420, sp: { striper: 1 }, water: "rocky", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "moving", expo: 100,
+    access: { v: "Public, fee lot", n: "Rye Harbor State Park (Ragged Neck) day fee, plus roadside at the harbor. The point and the jetty put deep water in casting range." },
+    wade: { r: "Bank and rocks", best: "any", n: "Mostly rock-hop casting off the point and jetty. Studded soles help, the weed gets slick on the lower half." },
+    boat: { ramps: [{ n: "Rye Harbor ramp", la: 43.0000, lo: -70.7440 }], drops: [] },
+    bait: "Mackerel schools pass in June, sand eels and silversides all season, pogies some years in August.",
+    brief: {
+      read: "A rocky point beside a working harbor inlet with genuinely deep water close to shore. When mackerel or pogies push through, the biggest fish of the NH season come within a cast.",
+      cast: "Cover the seam where harbor water meets open ocean on the moving tide. Let sinking lines count down along the rock edges, the eats come deep on bright days.",
+      gear: "9 or 10wt, 300 to 350 grain, big mackerel and herring profiles in June, sand eel flies after.",
+      prime: "June mackerel window at dawn, then dawn and dusk moving tides through October.",
+      blowout: "It takes east swell poorly. Odiorne and the inside of the harbor fish when the point is white water."
+    }, al: ["rye harbor", "ragged neck", "rye"] },
+
+  { id: "boars-head", c: "ne", reg: "NH Seacoast", name: "Great Boars Head", area: "Hampton NH",
+    lat: 42.9250, lng: -70.7960, sp: { striper: 1 }, water: "rocky", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "incoming", expo: 90,
+    access: { v: "Public, street parking", n: "Street parking on the headland loop, free before the meters wake up. Fish it at dawn and be gone before beach traffic." },
+    wade: { r: "Tricky", best: "low", n: "Boulder fields both sides wade at lower stages with careful feet. The top of the tide pushes you onto the seawall rocks." },
+    boat: { ramps: [], drops: [] },
+    bait: "Sand eels off the beaches both sides, silversides in the wash, peanut bunker tight to the rocks in early fall.",
+    brief: {
+      read: "The one piece of structure on miles of Hampton sand. Bass patrol the boulder edges where bait stacks against the headland, especially on the flood at first light.",
+      cast: "Work the down-current side of the head, casting along the rock edges rather than straight out. Short accurate presentations in the white water beat distance.",
+      gear: "9wt, intermediate, olive/white Clouser 1/0, Gurgler in the calm at grey light.",
+      prime: "Flood tide meeting dawn, June through September.",
+      blowout: "Onshore blow turns it to whitewash. The Hampton River jetties around the corner handle more weather."
+    }, al: ["boars head", "great boars"] },
+
+  { id: "new-castle", c: "ne", reg: "NH Seacoast", name: "Piscataqua Mouth", area: "New Castle NH",
+    lat: 43.0710, lng: -70.7110, sp: { striper: 1 }, water: "current", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "moving", expo: 70,
+    access: { v: "Public, fee at Common", n: "Great Island Common (small fee) and Fort Stark give shore access to one of the fastest tidal rivers in the country. The tide station is literally here, times are exact." },
+    wade: { r: "Bank only", best: "any", n: "Do not wade the Piscataqua. Fish from the rocks and beaches, the main current will not give you a second chance." },
+    boat: { ramps: [{ n: "Pierce Island ramp, Portsmouth", la: 43.0740, lo: -70.7430 }], drops: [{ n: "Back channel eddies", la: 43.0680, lo: -70.7190, note: "Work the eddy lines and seams off the islands on the turns, not the max flow." }] },
+    bait: "Mackerel and herring ride the current in early summer, squid some Junes, silversides and peanuts in the coves by fall.",
+    brief: {
+      read: "A firehose of tide draining Great Bay past forts and islands. The fish do not fight the main flow, they hold in the seams, eddies, and soft edges, and so should your fly.",
+      cast: "Fish the hour around each turn when the river is workable. Cast into the seam between fast and slow water, mend once, and let it swing to the hang.",
+      gear: "9 or 10wt, 350 grain, short stout leader, big herring and mackerel flies in June, sand eels later.",
+      prime: "The tide turns at dawn and dusk, May through October. Slack through the first hour of new current is the window.",
+      blowout: "Wind barely touches it, the current rules everything. If the tide is mid-rip, fish the protected coves at Fort Stark until it turns."
+    }, al: ["new castle", "piscataqua", "great island", "fort stark"] },
+
+  { id: "adams-point", c: "ne", reg: "NH Seacoast", name: "Adams Point", area: "Durham NH",
+    lat: 43.0920, lng: -70.8650, sp: { striper: 1 }, water: "current", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 120, tidePref: "outgoing", expo: 0,
+    access: { v: "Public", n: "UNH Jackson Lab lot at the end of Adams Point Rd. The narrows between Little Bay and Great Bay funnel everything through one cut. Tides run about two hours behind the coast, corrected here." },
+    wade: { r: "Moderate", best: "mid", n: "Rocky shoreline wades at lower and mid stages. The mud coves on either side will keep a boot as a souvenir." },
+    boat: { ramps: [{ n: "Adams Point cartop launch", la: 43.0920, lo: -70.8660 }], drops: [] },
+    bait: "River herring through the narrows in May, silversides and shrimp all summer, juvenile bunker exiting the bay in September.",
+    brief: {
+      read: "The pinch point of the whole Great Bay system. Every herring in May and every peanut in September squeezes through Furber Strait, and the bass set up in the current seams to take a toll.",
+      cast: "Swing the seams off the point on the outgoing like a river fisherman. When bait showers at the surface in fall, a peanut fly stripped through the melee gets crushed.",
+      gear: "9wt, intermediate or sink tip in the deeper seam, herring patterns in spring, small bunker flies in fall.",
+      prime: "May and again September, first half of the outgoing, early and late in the day.",
+      blowout: "Almost weatherproof, the bay kills the swell. Mid-summer warm water is the real blowout, fish the coast instead in August."
+    }, al: ["adams point", "furber", "little bay", "durham"] },
+
+  { id: "plum-island", c: "ne", reg: "North Shore MA", name: "Plum Island", area: "Newbury MA",
+    lat: 42.7620, lng: -70.7830, sp: { striper: 1 }, water: "beach", sight: false,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "moving", expo: 90,
+    access: { v: "Public, refuge fee", n: "Parker River NWR entrance fee, lots 1 through 7 down the island, Sandy Point state reservation at the tip. Lots fill on summer weekends, and the greenheads in late July are a blood tax." },
+    wade: { r: "Easy", best: "any", n: "Easy sand the whole refuge. Sandy Point at the south end wades onto bars at lower water, watch the sweep." },
+    boat: { ramps: [{ n: "Plum Island Point ramp", la: 42.8180, lo: -70.8190 }], drops: [] },
+    bait: "Sand eels are the island's currency, sea worms in the spring suds, peanut bunker riding out of the sound in fall.",
+    brief: {
+      read: "Six miles of refuge beach with bars, sloughs, and a sound-side back door. The south tip at Sandy Point fishes like a rip where the sound empties past the bar.",
+      cast: "Read the beach at low, mark the cuts, fish them on the flood at first light. At Sandy Point, swing the rip seam on the drop like a scaled-down Race Point.",
+      gear: "9wt, intermediate, sand eel patterns #2 to 1/0, black flies for the night shift on the ocean side.",
+      prime: "May and June, then September and October, moving tide at dawn before the lots fill.",
+      blowout: "Northeast blow closes the ocean side. The sound side off the refuge road and Joppa across the river stay fishable."
+    }, al: ["plum island", "parker river", "sandy point"] },
+
+  { id: "popham", c: "ne", reg: "Maine", name: "Popham Beach & Kennebec Mouth", area: "Phippsburg ME",
+    lat: 43.7350, lng: -69.7950, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8418150", stName: "Portland ME", lag: 10, tidePref: "outgoing", expo: 160,
+    access: { v: "Public, state park fee", n: "Popham Beach State Park lot, arrive early in summer. The river corner at the east end and the Morse River cut on the west are the fly water." },
+    wade: { r: "Moderate", best: "low", n: "Wade the beach bars and river corners, never the Kennebec channel itself. Ten feet of tide moves through here, respect it like Maine does." },
+    boat: { ramps: [{ n: "Phippsburg town landing", la: 43.7570, lo: -69.8130 }], drops: [{ n: "Kennebec channel edge", la: 43.7330, lo: -69.7870, note: "Work the seams off the beach bars on the outgoing, the main channel is a highway of bait and current." }] },
+    bait: "River herring and alewives pour out in June, sand eels on the bars, mackerel offshore pushing bait in.",
+    brief: {
+      read: "Maine's marquee striper water. The Kennebec drains a whole river system past a state park beach, and June fish stack the corners where river meets ocean.",
+      cast: "Swing big herring flies through the river corner seams on the outgoing. On the beach bars, fish the cuts at first light like any good sand beach, just with twice the current.",
+      gear: "9 or 10wt, 300 to 350 grain for the corners, intermediate on the bars, herring and sand eel patterns.",
+      prime: "June is the show, outgoing tide at dawn. Fish keep coming through September.",
+      blowout: "South swell closes the beach out. The Morse River cut and the inside of Atkins Bay fish in the lee."
+    }, al: ["popham", "kennebec", "phippsburg"] },
+
+  { id: "pine-point", c: "ne", reg: "Maine", name: "Pine Point & Scarborough Marsh", area: "Scarborough ME",
+    lat: 43.5450, lng: -70.3350, sp: { striper: 1 }, water: "marsh", sight: false,
+    station: "8418150", stName: "Portland ME", lag: 0, tidePref: "outgoing", expo: 140,
+    access: { v: "Public", n: "Pine Point fishermen's co-op lot and the Ferry Beach side. The Scarborough River mouth and the marsh edges are all within a short walk." },
+    wade: { r: "Easy", best: "low", n: "Easy sand at the mouth and along the bars. The marsh mud upstream is for the herons, stay on the sand side." },
+    boat: { ramps: [{ n: "Pine Point ramp", la: 43.5450, lo: -70.3390 }], drops: [] },
+    bait: "Maine's biggest salt marsh flushes shrimp, silversides, and juvenile herring every drop. Sand eels on the ocean bars.",
+    brief: {
+      read: "The largest salt marsh in Maine empties past one sandy point. Bass sit in the river mouth on every outgoing collecting what the marsh sends them.",
+      cast: "Fish it like a bonefish guide fishes a creek mouth: set up down-current of the flow, swing shrimp and silverside flies through the seam, move with the dropping water.",
+      gear: "8 or 9wt, intermediate, shrimp patterns and small Deceivers #2 to #1, Gurgler at dawn on the flats.",
+      prime: "Last half of the outgoing meeting first light, June through September.",
+      blowout: "It hides from most weather. If a real southerly blows, Higgins Beach around the corner takes the swell and the marsh stays calm."
+    }, al: ["pine point", "scarborough", "prouts neck"] },
+
+  { id: "higgins", c: "ne", reg: "Maine", name: "Higgins Beach", area: "Scarborough ME",
+    lat: 43.5620, lng: -70.2760, sp: { striper: 1 }, water: "beach", sight: false,
+    station: "8418150", stName: "Portland ME", lag: 0, tidePref: "incoming", expo: 130,
+    access: { v: "Public, tight parking", n: "Small paid lot a block back and resident-tilted street rules. Dawn patrol solves it, which is when you should be here anyway." },
+    wade: { r: "Easy", best: "low", n: "Easy sand, and the Spurwink River corner wades at lower stages. Surfers own midday, anglers own first light." },
+    boat: { ramps: [], drops: [] },
+    bait: "Sand eels in the wash, silversides at the river corner, mackerel schools some mornings just outside.",
+    brief: {
+      read: "A neighborhood beach with a river mouth at one end and reliable morning bass in the suds. Classic Maine surf fly water without the drive Downeast.",
+      cast: "Work the Spurwink corner on the incoming, then leapfrog the beach cuts. Short casts into the first trough catch more than heroic ones past the bar.",
+      gear: "9wt, intermediate, olive/white Clouser and sand eel flies, a Gurgler when it is greasy calm.",
+      prime: "Flood tide at dawn, June through September.",
+      blowout: "Swell turns it into a surf break, literally. Pine Point and the marsh side stay fishable."
+    }, al: ["higgins", "spurwink"] },
+
+  { id: "camp-ellis", c: "ne", reg: "Maine", name: "Camp Ellis & Saco Mouth", area: "Saco ME",
+    lat: 43.4550, lng: -70.3760, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8418150", stName: "Portland ME", lag: 0, tidePref: "outgoing", expo: 110,
+    access: { v: "Public", n: "Camp Ellis pier lot at the end of Route 9. The long granite jetty and the river mouth are steps from the truck." },
+    wade: { r: "Bank and jetty", best: "any", n: "Fish from the jetty rocks and the beach beside it. The Saco channel runs hard, keep your feet on granite or dry sand." },
+    boat: { ramps: [{ n: "Marblehead Boat Launch, Saco", la: 43.4910, lo: -70.4230 }], drops: [] },
+    bait: "Alewives and herring out of the Saco in early summer, sand eels and silversides along the jetty, peanuts in fall.",
+    brief: {
+      read: "A mile of jetty pointing into the Saco River outflow. Bass hold the seam the whole length of it, and the walk out filters the crowd to the committed.",
+      cast: "Work the river side of the jetty on the outgoing, casting up-current and swinging the seam. The far tip fishes best but the middle gets ignored and should not be.",
+      gear: "9 or 10wt, 300 grain, herring flies in June, sand eels after, a stripping basket on the rocks.",
+      prime: "Outgoing tide at dawn or dusk, June through September.",
+      blowout: "East swell breaks over the jetty, stay off it. The inside river bends and Ferry Beach fish the same tide safely."
+    }, al: ["camp ellis", "saco"] },
+
+  { id: "jenness", c: "ne", reg: "NH Seacoast", name: "Jenness & Plaice Cove", area: "Rye NH",
+    lat: 42.9800, lng: -70.7620, sp: { striper: 1 }, water: "beach", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "incoming", expo: 100,
+    access: { v: "Public, meters", n: "Metered lots at Jenness State Beach, free before enforcement. Plaice Cove pull-offs to the north are small and fill fast." },
+    wade: { r: "Easy", best: "low", n: "Sand with scattered rock pockets that wade fine at lower stages. The rocks are why the fish are here, wet wade them carefully." },
+    boat: { ramps: [], drops: [] },
+    bait: "Sand eels are the whole economy, silversides in the coves, occasional mackerel spraying bait at range.",
+    brief: {
+      read: "The sand eel beaches of Rye. Nothing dramatic, just consistent morning bass working the troughs and rock pockets, the definition of dependable home water.",
+      cast: "Fish the seams beside each rock pocket on the flood. A slim sand eel fly swum with a two-hand retrieve outfishes everything else here four mornings out of five.",
+      gear: "9wt, intermediate, sand eel patterns #2 to 1/0, 9ft leader to 16lb.",
+      prime: "Flood tide at first light, June through September, calm mornings.",
+      blowout: "Onshore chop kills the trough game. Rye Harbor point and Odiorne handle more sea."
+    }, al: ["jenness", "plaice cove", "rye beach"] },
+
+  { id: "little-harbor", c: "ne", reg: "NH Seacoast", name: "Little Harbor", area: "New Castle NH",
+    lat: 43.0620, lng: -70.7260, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8423898", stName: "Fort Point NH", lag: 15, tidePref: "incoming", expo: 90,
+    access: { v: "Public", n: "Park at Odiorne's north lot or the Wentworth-Coolidge mansion side. The protected flats and channel edges sit behind the Wentworth hotel." },
+    wade: { r: "Easy", best: "low", n: "Firm sand and mud flats wade well on the lower half. Know where the channel is before the flood erases the edges." },
+    boat: { ramps: [{ n: "Wentworth-Coolidge cartop launch", la: 43.0640, lo: -70.7350 }], drops: [] },
+    bait: "Silversides and shrimp on the flats, juvenile herring in the channel, green crabs everywhere.",
+    brief: {
+      read: "The Seacoast's quiet sight fishery. Protected water behind New Castle where singles slide onto the flats with the flood and tail on crabs like little bonefish.",
+      cast: "Sun high, move slow, look for wakes and tails on the young flood. Lead cruising fish ten feet with a crab or shrimp fly and let them find it.",
+      gear: "8wt, floating, 12ft leader, crab flies #4 and small shrimp patterns. Quiet feet matter more than fly choice.",
+      prime: "First half of the flood, midday sun, May through July before it warms.",
+      blowout: "Cloud kills the sighting. Blind the channel edge on the same tide or slide to the Piscataqua turns."
+    }, al: ["little harbor", "wentworth"] },
+
+  { id: "salisbury", c: "ne", reg: "North Shore MA", name: "Salisbury Beach & North Jetty", area: "Salisbury MA",
+    lat: 42.8280, lng: -70.8050, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "outgoing", expo: 90,
+    access: { v: "Public, state fee", n: "Salisbury Beach State Reservation, camp side lots put you at the Merrimack's north jetty. Night fishing tolerated with a line in the water." },
+    wade: { r: "Bank and beach", best: "any", n: "Fish the jetty rocks and the beach corner. The Merrimack outflow has drowned better swimmers than you, stay out of the channel." },
+    boat: { ramps: [{ n: "Salisbury state ramp", la: 42.8410, lo: -70.8170 }], drops: [] },
+    bait: "Everything the Merrimack grows: herring in spring, sand eels and peanut bunker in fall, sea worms in the May suds.",
+    brief: {
+      read: "The north side of the Merrimack mouth, the workingman's answer to Joppa. The jetty seam and the beach corner collect fish on every outgoing.",
+      cast: "Cast up-current from the jetty and swing the seam, or work the corner where beach meets rocks. Night tides in June produce the biggest fish of the year here.",
+      gear: "9 or 10wt, 300 grain in the current, black Deceivers after dark, sand eels by day.",
+      prime: "Outgoing tide, dawn, dusk, and after dark, May through October.",
+      blowout: "Northeast swell shuts the jetty. The inside river bends by the ramp fish the same water safely."
+    }, al: ["salisbury", "north jetty"] },
+
+  { id: "crane", c: "ne", reg: "North Shore MA", name: "Crane Beach & Essex Bay", area: "Ipswich MA",
+    lat: 42.6830, lng: -70.7650, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "incoming", expo: 60,
+    access: { v: "Public, steep fee", n: "Trustees lot at Crane Beach, pricey in summer, cheap at dawn. The Essex Bay side and Castle Neck bars are a walk down the beach." },
+    wade: { r: "Easy", best: "low", n: "Miles of hard sand bars at the Essex Bay mouth. The flood comes fast across them, keep the exit in mind. Greenheads in late July take a blood toll." },
+    boat: { ramps: [{ n: "Essex town ramp", la: 42.6320, lo: -70.7810 }], drops: [] },
+    bait: "Sand eels by the acre on the bars, silversides and shrimp draining Essex Bay, sea worms in the spring.",
+    brief: {
+      read: "White sand bars where Essex Bay empties past Castle Neck, and bass cruise the guzzles in skinny water. The North Shore's answer to Brewster.",
+      cast: "Low tide, walk the bars, take shots at fish sliding up the guzzles with the new flood. Long leads, small flies, one strip when they are close.",
+      gear: "8 or 9wt, floating or clear tip, sand eel flies #4 to #1, crab fly for tailers.",
+      prime: "First two hours of flood with midday sun, June and July.",
+      blowout: "Cloud or chop ends the sight game. Blind the Essex River channel on the drop instead."
+    }, al: ["crane", "essex bay", "castle neck", "ipswich"] },
+
+  { id: "annisquam", c: "ne", reg: "North Shore MA", name: "Annisquam & Wingaersheek", area: "Gloucester MA",
+    lat: 42.6600, lng: -70.6800, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "incoming", expo: 20,
+    access: { v: "Public, fee lot", n: "Wingaersheek Beach lot (Gloucester fee) fronts the Annisquam River mouth. The bars and channel edge are right there at low water." },
+    wade: { r: "Easy", best: "low", n: "Hard sand bars wade beautifully at the bottom of the tide. The channel drops off sharp, fish the edge, do not cross it." },
+    boat: { ramps: [{ n: "Dunfudgin ramp, Gloucester", la: 42.6300, lo: -70.6770 }], drops: [] },
+    bait: "Sand eels on the bars, silversides riding the river, mackerel off the lighthouse some Junes.",
+    brief: {
+      read: "The Annisquam empties past a white sand beach and the bass ride the channel edge like a moving sidewalk. Sight fishing at low, current fishing as it builds.",
+      cast: "At low, hunt the bar edges for cruisers. As the flood builds, swing flies along the channel drop where the river current pins the bait.",
+      gear: "8 or 9wt, floating for the bars, intermediate for the channel edge, sand eel patterns.",
+      prime: "Bottom of the tide through the first hours of flood, morning light, June through September.",
+      blowout: "It is remarkably protected. A hard northerly is the only wind that hurts, and Crane across the bay fishes the lee."
+    }, al: ["annisquam", "wingaersheek", "gloucester"] },
+
+  { id: "boston-harbor", c: "ne", reg: "Boston Harbor", name: "Boston Harbor & Deer Island", area: "Winthrop MA",
+    lat: 42.3500, lng: -70.9550, sp: { striper: 1 }, water: "current", sight: false,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "moving", expo: 90,
+    access: { v: "Public", n: "Deer Island perimeter path (free lot in Winthrop) puts a paved loop around rips, riprap, and channel edges with the skyline behind you." },
+    wade: { r: "Bank only", best: "any", n: "Riprap casting from the path, no wading. The shipping channel current at the point is the fish magnet and the hazard." },
+    boat: { ramps: [{ n: "Winthrop public landing", la: 42.3760, lo: -70.9830 }], drops: [{ n: "President Roads edge", la: 42.3420, lo: -70.9480, note: "Drift the channel edge seams on the moving tide, watch for ship traffic like your hull depends on it." }] },
+    bait: "The cleaned-up harbor is a bait factory again: herring runs, silversides, peanut bunker thick by September.",
+    brief: {
+      read: "The comeback story. Boston Harbor is full of bass again, and Deer Island's point puts real current and structure within a T ride of the city.",
+      cast: "Fish the point rips on the moving tide, casting up-current and swinging through. Dawn before work is the move, the fish and the parking both cooperate.",
+      gear: "9wt, intermediate or 300 grain for the rips, sand eel and silverside flies, white Deceiver at first light.",
+      prime: "Moving tide at dawn, May through October, September peanuts are the peak.",
+      blowout: "The harbor islands break most swell. If the point is ugly, the inside coves off the path fish the lee."
+    }, al: ["boston harbor", "deer island", "winthrop"] },
+
+  { id: "north-river", c: "ne", reg: "South Shore MA", name: "North River Mouth", area: "Scituate MA",
+    lat: 42.1620, lng: -70.7040, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "outgoing", expo: 100,
+    access: { v: "Public", n: "Rexhame Beach lot (Marshfield) or the Humarock side via Central Ave. The spit walk to the mouth is the price of admission." },
+    wade: { r: "Moderate", best: "any", n: "Wade the beach and spit edges only. The mouth current on the outgoing is among the strongest on the South Shore, it has taken lives, give it total respect." },
+    boat: { ramps: [{ n: "Union St ramp, Marshfield", la: 42.1230, lo: -70.7060 }], drops: [] },
+    bait: "Herring out of the river system in spring, sand eels on the beach bars, silversides and shrimp draining the marsh all season.",
+    brief: {
+      read: "Two rivers drain a huge marsh system through one shifting mouth. Bass stack the seam on every outgoing, and the spit gives a fly rod room to work it.",
+      cast: "Set up on the down-current side of the mouth and swing the seam like a salmon run. Step and cast your way along as the tide drops, the fish slide with it.",
+      gear: "9wt, intermediate or sink tip, herring flies in May, sand eels and silversides after.",
+      prime: "Outgoing tide at dawn or dusk, May through October.",
+      blowout: "East swell breaks across the mouth. Fall back to the inside river bends off the ramp on the same tide."
+    }, al: ["north river", "humarock", "rexhame", "scituate"] },
+
+  { id: "duxbury", c: "ne", reg: "South Shore MA", name: "Duxbury & Plymouth Flats", area: "Duxbury MA",
+    lat: 42.0000, lng: -70.6400, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8443970", stName: "Boston MA", lag: 10, tidePref: "incoming", expo: 70,
+    access: { v: "Public edges, boat smart", n: "Duxbury Beach (fee) and Powder Point Bridge give walk-on access to the bay edges. The full flats spread inside is skiff and kayak water." },
+    wade: { r: "Easy on the edges", best: "low", n: "Hard sand off the beach side wades well at low. The inner bay mixes firm and soft, test as you go and mind the oyster grants." },
+    boat: { ramps: [{ n: "Duxbury town ramp", la: 42.0420, lo: -70.6720 }], drops: [] },
+    bait: "Sand eels and silversides across the flats, green crabs on the bars, herring through the bay in spring.",
+    brief: {
+      read: "A bay full of white sand flats where schools flood in from the Gurnet and spread across skinny water. The South Shore's sight fishery, minutes from the bridge.",
+      cast: "Post on a bar edge as the flood starts and take shots at pushing schools. The fish here move fast, lead them long and let the fly wait.",
+      gear: "8wt, floating, 12ft leader, sand eel flies #4 to #1, crab patterns for slow cruisers.",
+      prime: "First half of the flood, sun high, June and July.",
+      blowout: "Wind chop ends the sighting fast in the open bay. The lee of the Powder Point spit or the Bluefish River mouth save the tide."
+    }, al: ["duxbury", "plymouth", "powder point", "gurnet"] },
+
+  { id: "scorton", c: "ne", reg: "Cape Cod", name: "Scorton Creek", area: "Sandwich MA",
+    lat: 41.7550, lng: -70.4300, sp: { striper: 1 }, water: "marsh", sight: false,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "incoming", expo: 10,
+    access: { v: "Public", n: "Pull-offs on Route 6A near the creek and the East Sandwich beach lot. The marsh and creek mouth are a short walk either way." },
+    wade: { r: "Easy at the mouth", best: "high", n: "Sand at the mouth wades easy. Inside the marsh, fish from the firm edges, the channel mud is bottomless in spots." },
+    boat: { ramps: [], drops: [] },
+    bait: "Shrimp and silversides flood the marsh on big tides, sand eels on the bayside bars, worms in the spring.",
+    brief: {
+      read: "A classic bayside creek where bass ride the flood into the spartina to hunt shrimp, then slide back out on the drop. Small water, technical, addictive.",
+      cast: "On the top of big tides, fish the marsh edges upstream with shrimp flies and a Gurgler, quiet casts to pushes and swirls. On the drop, meet them at the mouth.",
+      gear: "8wt, floating, 9ft leader to 16lb, shrimp patterns #2 to #4, a small Gurgler for the surface takes.",
+      prime: "The biggest flood tides of the month, dawn or dusk, May through September.",
+      blowout: "Wind barely reaches inside the marsh. If the bay side is unfishable, the creek is your bad-weather ace."
+    }, al: ["scorton", "east sandwich"] },
+
+  { id: "barnstable", c: "ne", reg: "Cape Cod", name: "Barnstable Harbor Flats", area: "Barnstable MA",
+    lat: 41.7200, lng: -70.3000, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8443970", stName: "Boston MA", lag: 0, tidePref: "incoming", expo: 30,
+    access: { v: "Public edges, boat smart", n: "Millway Beach lot at the harbor mouth for walk-on edges. The big flats spread behind Sandy Neck is skiff and kayak country." },
+    wade: { r: "Easy where hard", best: "low", n: "Hard sand near the channel edges and Sandy Neck tip, softer deep in the harbor. The flood fills fast, plan the walk back." },
+    boat: { ramps: [{ n: "Blish Point ramp", la: 41.7080, lo: -70.3020 }], drops: [] },
+    bait: "Sand eels everywhere, silversides on the grass edges, green crabs on the bars.",
+    brief: {
+      read: "Miles of bayside flats behind a barrier dune where big June fish slide into inches of water. Brewster's quieter sibling with a harbor channel funneling everything.",
+      cast: "Hunt the channel edges at low, then let the flood push fish to you across the bars. Wakes and nervous water first, tails when you are lucky.",
+      gear: "8 or 9wt, floating, 12ft leader, sand eel and crab flies. Sun and quiet feet are half the gear list.",
+      prime: "First half of flood, midday sun, June and early July.",
+      blowout: "Chop kills the sighting on the open flats. The lee of Sandy Neck and the harbor channel edges keep working."
+    }, al: ["barnstable", "sandy neck", "millway"] },
+
+  { id: "pleasant-bay", c: "ne", reg: "Cape Cod", name: "Pleasant Bay & Nauset Inlet", area: "Orleans MA",
+    lat: 41.7000, lng: -69.9400, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8443970", stName: "Boston MA", lag: -30, tidePref: "incoming", expo: 90,
+    access: { v: "Public edges, boat smart", n: "Nauset Beach lot (Orleans fee) for the inlet walk, town landings for the bay. The inside flats and the shifting inlet are best reached by skiff or a long committed walk." },
+    wade: { r: "Easy where sandy", best: "low", n: "Hard sand around the inlet bars and outer bay edges. The inlet itself shifts yearly and the current is deadly serious, wade the edges, never the throat." },
+    boat: { ramps: [{ n: "Goose Hummock ramp, Orleans", la: 41.7880, lo: -69.9880 }], drops: [] },
+    bait: "Sand eels on every bar, silversides in the bay grass, squid in the inlet some Junes, peanuts by September.",
+    brief: {
+      read: "A huge protected bay behind the outer beach, drained by an inlet that rearranges itself every winter. Flats fish inside, rip fish at the throat, seals and sharks as neighbors.",
+      cast: "Inside, sight-fish the bars on the flood like Monomoy's little brother. At the inlet, swing the seams on the drop from the safe side of the bar.",
+      gear: "9wt covers both games, floating for the flats, intermediate at the inlet, sand eel flies always.",
+      prime: "June and July on the flats, September at the inlet, moving water at first light.",
+      blowout: "Ocean swell owns the inlet. The inside bay stays calm and fishes through nearly anything."
+    }, al: ["pleasant bay", "nauset", "orleans"] },
+
+  { id: "great-point", c: "ne", reg: "Cape & Islands", name: "Great Point", area: "Nantucket MA",
+    lat: 41.3900, lng: -70.0480, sp: { striper: 1, albie: 0.85 }, water: "rocky", sight: false,
+    station: "8449130", stName: "Nantucket MA", lag: 0, tidePref: "moving", expo: 60,
+    access: { v: "OSV permit or long walk", n: "Coskata-Coatue refuge, Trustees oversand permit and deflated tires, or a seven mile beach hike. The rip off the point is the reward." },
+    wade: { r: "Easy sand, hard current", best: "any", n: "Easy sand right to the point, but the rip sweeps hard along the bar. Ankle deep is plenty, the fish are in the wash." },
+    boat: { ramps: [{ n: "Nantucket town ramp", la: 41.2860, lo: -70.0960 }], drops: [{ n: "The rip line", la: 41.3920, lo: -70.0440, note: "Set up up-tide of the rip and drift the seam, give the beach casters the inside water." }] },
+    bait: "Sand eels in clouds, silversides, bay anchovies when the albies arrive in late August.",
+    brief: {
+      read: "Where Nantucket Sound collides with the ocean off a lighthouse. The rip runs within a cast of dry sand, bass all season, albies ripping through it from late August.",
+      cast: "Cast up-current into the rip and swing it, stepping down the bar between casts. When albies shower through, lead the direction of travel and strip for your life.",
+      gear: "9 or 10wt, intermediate, sand eel flies for bass, small epoxy anchovies when the funny fish show. Backing you trust.",
+      prime: "June and again September into October, moving tide, first light before the OSV parade.",
+      blowout: "Big swell wraps the point from both sides. The Coatue flats inside the harbor fish the lee, and they are sneaky good."
+    }, al: ["great point", "nantucket", "coskata"] },
+
+  { id: "wasque", c: "ne", reg: "Cape & Islands", name: "Wasque Point", area: "Chappaquiddick, Marthas Vineyard MA",
+    lat: 41.3550, lng: -70.4500, sp: { striper: 1, albie: 0.7 }, water: "beach", sight: false,
+    station: "8449130", stName: "Nantucket MA", lag: 30, tidePref: "moving", expo: 150,
+    access: { v: "Ferry plus fee", n: "Chappy ferry from Edgartown, then Trustees lot at Wasque or OSV with permit. Tide times here are estimates off Nantucket, the rip has its own opinions." },
+    wade: { r: "Easy sand, brutal sweep", best: "any", n: "Sand underfoot, but the Muskeget Channel sweep along the point is the strongest on the island. Knee deep maximum, and watch your line downstream." },
+    boat: { ramps: [{ n: "Edgartown ramp", la: 41.3900, lo: -70.5100 }], drops: [] },
+    bait: "Sand eels and squid in the rip, bay anchovies in fall, bonito bait balls offshore in September.",
+    brief: {
+      read: "The southeast corner of the Vineyard where the whole Muskeget Channel drags past a sand point. The classic island rip, bass in the sweep, albies and bonito in the fall.",
+      cast: "Fish it like a river: cast up-current, one mend, swing the seam, step down. The take comes on the hang more often than not.",
+      gear: "10wt earns its keep in the sweep, 300 grain, squid flies and sand eels, albie box from Labor Day.",
+      prime: "Moving tide at dawn, June, then September and October for the mixed bag.",
+      blowout: "South swell closes the point. East Beach up the outside or Cape Poge inside fish the same trip."
+    }, al: ["wasque", "chappy", "chappaquiddick"] },
+
+  { id: "westport", c: "ne", reg: "South Coast MA", name: "Westport River", area: "Westport MA",
+    lat: 41.5100, lng: -71.0800, sp: { striper: 1 }, water: "flat", sight: true,
+    station: "8452660", stName: "Newport RI", lag: 10, tidePref: "incoming", expo: 180,
+    access: { v: "Public, fee at Horseneck", n: "Horseneck Beach state lot at the mouth, town landings up both branches. Kayaks own the upper flats and that is the honest best way in." },
+    wade: { r: "Easy near the mouth", best: "low", n: "Sand at the mouth and lower bars wades well. The upriver flats mix firm sand and boot-eating mud, kayak between, wade the light bottoms." },
+    boat: { ramps: [{ n: "F.L. Tripp ramp, Westport Point", la: 41.5090, lo: -71.0850 }], drops: [] },
+    bait: "Silversides and shrimp through the grass, sand eels at the mouth bars, herring up the branches in spring.",
+    brief: {
+      read: "Two river branches of grass edges and sand flats behind a barrier beach. Sight fishing for singles in skinny water upriver, current fishing at the mouth.",
+      cast: "Upriver, pole or paddle and take shots at cruisers along the grass, soft casts, small flies. At the mouth, swing the outgoing seam off the bars.",
+      gear: "8wt, floating, 12ft leader, silverside and shrimp flies #2 to #4, crab for the flat cruisers.",
+      prime: "Flood tide upriver with sun, outgoing at the mouth, May through September.",
+      blowout: "The river hides from everything but a due southerly. The upper branches are the calm-water insurance policy."
+    }, al: ["westport", "horseneck"] },
+
+  { id: "narrow-river", c: "ne", reg: "Rhode Island", name: "Narrow River", area: "Narragansett RI",
+    lat: 41.4290, lng: -71.4500, sp: { striper: 1 }, water: "inlet", sight: true,
+    station: "8452660", stName: "Newport RI", lag: 0, tidePref: "outgoing", expo: 130,
+    access: { v: "Public", n: "Narragansett town beach north lot puts you at the river mouth. Sprague Bridge upriver for the kayak put-in to the inside flats." },
+    wade: { r: "Easy at the mouth", best: "any", n: "Sand at the mouth corner wades easy. The channel through the beach is narrow and quick, cross it only at dead low if at all." },
+    boat: { ramps: [], drops: [] },
+    bait: "Herring in and out through spring, silversides and shrimp draining all season, sea worms in the May marsh.",
+    brief: {
+      read: "The Pettaquamscutt empties through a slot in the town beach. Spring fish stack the mouth on herring, and the inside coves hold sight fishing nobody drives past Watch Hill for.",
+      cast: "At the mouth, swing the outgoing seam at dawn. Inside from a kayak, hunt the cove edges on the flood for cruisers over light sand.",
+      gear: "8 or 9wt, intermediate at the mouth, floating inside, herring flies in May, silversides after.",
+      prime: "May and June, outgoing at the mouth mornings, flood inside with sun.",
+      blowout: "South swell breaks across the mouth. The inside river is the built-in plan B on the same tank of gas."
+    }, al: ["narrow river", "narragansett", "pettaquamscutt"] },
+
+  { id: "quonnie", c: "ne", reg: "Rhode Island", name: "Quonochontaug Breachway", area: "Charlestown RI",
+    lat: 41.3310, lng: -71.7200, sp: { striper: 1, albie: 0.6 }, water: "inlet", sight: false,
+    station: "8452660", stName: "Newport RI", lag: 0, tidePref: "outgoing", expo: 180,
+    access: { v: "Public", n: "State ramp lot at the end of West Beach Rd. The granite chute and pond-side flats are steps away, the crowd is thinner than Charlestown's." },
+    wade: { r: "Moderate", best: "any", n: "Fish the rocks and the beach corners. The chute itself is a no-wade zone, the outgoing runs like a sluice." },
+    boat: { ramps: [{ n: "Quonochontaug state ramp", la: 41.3320, lo: -71.7190 }], drops: [] },
+    bait: "The pond exports shrimp, crabs, and silversides every drop, cinder worms inside around the May moons, anchovies in fall.",
+    brief: {
+      read: "The quieter breachway. Same granite chute physics as Charlestown, same night game on the outgoing, plus pond flats inside that sight-fish on summer floods.",
+      cast: "Drift flies down the outgoing seam at night, two hours either side of low. Fall daylight, watch the mouth for albies pinning bait against the beach.",
+      gear: "9wt, intermediate, black flies at night, shrimp and worm patterns inside, epoxy anchovies for the fall visitors.",
+      prime: "Night outgoings June through September, fall mornings for the mixed bag.",
+      blowout: "This coast loves ugly. If flat calm kills the night bite, the pond flats at dawn are the counterpunch."
+    }, al: ["quonnie", "quonochontaug"] },
+
+  { id: "brenton", c: "ne", reg: "Rhode Island", name: "Brenton Point", area: "Newport RI",
+    lat: 41.4490, lng: -71.3560, sp: { striper: 1, albie: 0.7 }, water: "rocky", sight: false,
+    station: "8452660", stName: "Newport RI", lag: 0, tidePref: "moving", expo: 190,
+    access: { v: "Public", n: "Brenton Point State Park, free lots on Ocean Drive. The rock shelves west of the lot are the fly perches." },
+    wade: { r: "Bank only", best: "any", n: "Rock shelf casting over deep water, no wading. Swell surges these ledges, never turn your back on the ocean here." },
+    boat: { ramps: [{ n: "Fort Adams ramp", la: 41.4780, lo: -71.3380 }], drops: [] },
+    bait: "Squid on the reefs in early summer, sand eels and silversides in the coves, bay anchovies streaming past in fall.",
+    brief: {
+      read: "Newport's open-ocean corner. Deep water against the rocks, squid-eating bass in June, and a front-row seat when the fall albie parade rounds the point.",
+      cast: "Count sinking lines down along the ledge edges and swim squid flies deep. In fall, hold your water and cast when the showers come through, they always come back.",
+      gear: "10wt, 350 grain for the bass game, floating with anchovy flies for albies, a long-handled net or a plan for the rocks.",
+      prime: "June squid run at dawn, September October moving tides for albies and bass.",
+      blowout: "Real swell makes the ledges lethal, stand down. Inside Narragansett Bay at Fort Adams fishes the same day safely."
+    }, al: ["brenton", "ocean drive", "newport"] },
+
+  { id: "ct-river", c: "ne", reg: "Connecticut", name: "Connecticut River Mouth", area: "Old Lyme CT",
+    lat: 41.2900, lng: -72.3500, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8461490", stName: "New London CT", lag: 15, tidePref: "outgoing", expo: 170,
+    access: { v: "Public", n: "Griswold Point access via the White Sand Beach end (respect the plover closures), or fish the DEEP ramp side at Great Island. The mouth bars are the game." },
+    wade: { r: "Moderate", best: "low", n: "Wade the bar edges at lower stages. The main channel moves serious water and the bars shift yearly, feel your way." },
+    boat: { ramps: [{ n: "Great Island state ramp", la: 41.3020, lo: -72.3490 }], drops: [] },
+    bait: "The river is a bait pump: herring and shad runs in spring, silversides and peanuts pouring out all fall, sand eels on the Sound bars.",
+    brief: {
+      read: "New England's biggest river meets Long Island Sound across a delta of bars. Spring fish gorge on the herring runs, and fall fish stage here on the way west.",
+      cast: "Swing big herring flies through the channel seams in May. In fall, work the bar edges on the outgoing as bait flushes to the Sound.",
+      gear: "9 or 10wt, 300 grain for the seams, intermediate on the bars, herring and peanut bunker patterns.",
+      prime: "May and June on the runs, September and October on the flush, outgoing tides at dawn.",
+      blowout: "A hard southerly stacks the mouth. Slide inside to the Great Island marsh edges on the same tide."
+    }, al: ["connecticut river", "old lyme", "griswold"] },
+
+  { id: "penfield", c: "ne", reg: "Connecticut", name: "Penfield Reef", area: "Fairfield CT",
+    lat: 41.1180, lng: -73.2350, sp: { striper: 1, albie: 0.3 }, water: "rocky", sight: false,
+    station: "8467150", stName: "Bridgeport CT", lag: 0, tidePref: "moving", expo: 170,
+    access: { v: "Public, resident-tilted", n: "Penfield Beach and Shoal Point lots (Fairfield rules tighten in summer, dawn solves it). The reef runs a mile off the point toward the lighthouse." },
+    wade: { r: "Low tide only, strict", n: "The reef bar exposes at low and wades out toward the light, then the flood covers it fast and people get stranded here every year. Set a hard turnaround time and honor it.", best: "low" },
+    boat: { ramps: [{ n: "South Benson ramp, Fairfield", la: 41.1330, lo: -73.2480 }], drops: [{ n: "Reef tip rips", la: 41.1090, lo: -73.2210, note: "Drift the down-tide side of the bar on the moving water, the lighthouse end holds the biggest fish." }] },
+    bait: "Sand eels and silversides along the bar, bunker schools in the Sound, anchovies when western albies wander through in fall.",
+    brief: {
+      read: "A mile-long boulder reef poking into Long Island Sound, the best structure on the western CT shore. Bass patrol both sides on every moving tide.",
+      cast: "At low, walk the exposed bar and cover both edges as you go. From the boat, swing the rips at the tip. Either way the seam between current and slack is the lane.",
+      gear: "9wt, intermediate, sand eel flies and small bunker patterns, studded boots on the weed-slick rocks.",
+      prime: "Moving tide bracketing low, dawn and dusk, May through October.",
+      blowout: "South wind puts chop over the bar and hides the footing. The beach coves either side fish safe in the same window."
+    }, al: ["penfield", "fairfield"] },
 ];
 
 })(typeof window !== "undefined" ? window : globalThis);
