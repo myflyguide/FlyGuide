@@ -77,6 +77,7 @@ const lerpArr = (arr, date) => {
 };
 const moonPhase = (d) => { const syn = 29.53058867; const ref = new Date(Date.UTC(2000, 0, 6, 18, 14)); const days = (d - ref) / 86400000; return ((days % syn) + syn) % syn / syn; };
 const moonName = (p) => p < 0.03 || p > 0.97 ? "New moon" : p < 0.22 ? "Waxing crescent" : p < 0.28 ? "First quarter" : p < 0.47 ? "Waxing gibbous" : p < 0.53 ? "Full moon" : p < 0.72 ? "Waning gibbous" : p < 0.78 ? "Last quarter" : "Waning crescent";
+const moonEmoji = (p) => p < 0.03 || p > 0.97 ? "\u{1F311}" : p < 0.22 ? "\u{1F312}" : p < 0.28 ? "\u{1F313}" : p < 0.47 ? "\u{1F314}" : p < 0.53 ? "\u{1F315}" : p < 0.72 ? "\u{1F316}" : p < 0.78 ? "\u{1F317}" : "\u{1F318}";
 const gmapsDir = (la, lo) => `https://www.google.com/maps/dir/?api=1&destination=${la},${lo}`;
 const havMi = (a1, o1, a2, o2) => { const R = 3959, d = Math.PI / 180; const dA = (a2 - a1) * d, dO = (o2 - o1) * d; const h = Math.pow(Math.sin(dA / 2), 2) + Math.cos(a1 * d) * Math.cos(a2 * d) * Math.pow(Math.sin(dO / 2), 2); return 2 * R * Math.asin(Math.sqrt(h)); };
 const nearestSpots = (la, lo, n) => SPOTS.map((s) => ({ s, mi: havMi(la, lo, s.lat, s.lng) })).sort((a, b) => a.mi - b.mi).slice(0, n || 6);
@@ -382,7 +383,6 @@ function App() {
   const [spotId, setSpotId] = useState(hash.spot || null);
   const [manual, setManual] = useState(!!hash.spot);
   const [q, setQ] = useState("");
-  const [showV, setShowV] = useState(false);
   const [geoSugs, setGeoSugs] = useState([]);
   const [nearby, setNearby] = useState(null);
   const sugs = useMemo(() => suggestFor(q, cid), [q, cid]);
@@ -426,6 +426,16 @@ function App() {
   };
   const [draft, setDraft] = useState("");
   const endRef = useRef(null);
+
+  /* auto scroll to the call after any spot or species pick */
+  const heroRef = useRef(null);
+  const [scrollTick, setScrollTick] = useState(0);
+  const scrollToHero = () => setScrollTick((t) => t + 1);
+  useEffect(() => {
+    if (!scrollTick) return;
+    const t = setTimeout(() => { if (heroRef.current) heroRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); else window.scrollTo({ top: 0, behavior: "smooth" }); }, 150);
+    return () => clearTimeout(t);
+  }, [scrollTick]);
 
   const spots = useMemo(() => SPOTS.filter((s) => s.c === cid && (s.sp[sp] || 0) > 0), [cid, sp]);
   const spot = spots.find((s) => s.id === spotId) || spots[0] || SPOTS[0];
@@ -522,14 +532,15 @@ function App() {
   const dmById = (id) => dayModels.find((d) => d.spot.id === id);
   const [view, setView] = useState(hash.spot ? "spot" : "home");
   useEffect(() => { if (view === "spot") history.replaceState(null, "", `#spot=${spot.id}&c=${cid}&sp=${sp}`); else history.replaceState(null, "", location.pathname + location.search); }, [spot.id, cid, sp, view]);
-  const homeBest = useMemo(() => CORR.map((c) => {
-    let best = null;
-    c.species.forEach((k) => SPOTS.filter((s) => s.c === c.id && (s.sp[k] || 0) > 0).forEach((s) => {
-      const d = computeDay(s, k, today, ctxFor(today, s));
-      if (!best || d.peak > best.peak) best = { spot: s, k, peak: d.peak };
-    }));
-    return { c, best };
-  }), [tides, wx, sst, mode]);
+  const homeSpBest = useMemo(() => {
+    const out = {};
+    Object.keys(SPX).forEach((k) => {
+      let best = null;
+      SPOTS.forEach((s) => { if ((s.sp[k] || 0) > 0) { const d = computeDay(s, k, today, ctxFor(today, s)); if (!best || d.peak > best.peak) best = { spot: s, peak: d.peak }; } });
+      if (best) out[k] = best;
+    });
+    return out;
+  }, [tides, wx, sst, mode]);
   const homePins = useMemo(() => SPOTS.map((s) => {
     const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
     const d = computeDay(s, k, today, ctxFor(today, s));
@@ -621,9 +632,36 @@ function App() {
   const moonP = moonPhase(date);
   const dayOff = Math.round((date - today) / 86400000);
   const conf = confidence(dayOff, spot);
-  const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
+  const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonEmoji(moonP)} ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
 
-  const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); setView("spot"); };
+  const jumpToSpot = (s, stay) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); setView("spot"); if (!stay) scrollToHero(); };
+
+  /* species dropdown: only what actually swims in the water on screen */
+  const availSpecies = useMemo(() => {
+    if (nearby && nearby.items.length) {
+      const set = new Set();
+      nearby.items.forEach(({ s }) => Object.keys(s.sp).forEach((k) => { if (s.sp[k] > 0) set.add(k); }));
+      return Object.keys(SPX).filter((k) => set.has(k));
+    }
+    return cor.species;
+  }, [nearby, cid]);
+  const verdictBySp = useMemo(() => { const m = {}; verdicts(cid, date).forEach((v) => { m[v.sp] = v; }); return m; }, [cid, date]);
+  const pickSpecies = (k) => {
+    if (nearby && nearby.items.length) {
+      const holders = nearby.items.filter(({ s }) => (s.sp[k] || 0) > 0);
+      if (holders.length) {
+        const scored = holders.map((it) => ({ it, peak: computeDay(it.s, k, today, ctxFor(today, it.s)).peak }));
+        scored.sort((a, b) => b.peak - a.peak || a.it.mi - b.it.mi);
+        skipReset.current = true; setCid(scored[0].it.s.c); setSp(k); setSpotId(scored[0].it.s.id); setManual(true); setView("spot"); scrollToHero();
+        return;
+      }
+    }
+    let best = null;
+    SPOTS.forEach((s) => { if ((s.sp[k] || 0) > 0) { const d = computeDay(s, k, today, ctxFor(today, s)); if (!best || d.peak > best.peak) best = { s, peak: d.peak }; } });
+    skipReset.current = true;
+    if (best) setCid(best.s.c); else { const home = CORR.find((c) => c.species.includes(k)); if (home) setCid(home.id); }
+    setSp(k); setManual(false); setView("spot"); scrollToHero();
+  };
   const applyNear = (lbl, la, lo) => {
     const sorted = nearestSpots(la, lo, SPOTS.length);
     const close = sorted.filter((x) => x.mi <= 30);
@@ -633,8 +671,7 @@ function App() {
     if (items.length) {
       const scored = items.map((it) => { const k = (it.s.sp[sp] || 0) > 0 ? sp : Object.keys(it.s.sp).find((x) => it.s.sp[x] > 0); return { it, peak: k ? computeDay(it.s, k, today, ctxFor(today, it.s)).peak : 0 }; });
       scored.sort((a, b) => b.peak - a.peak || a.it.mi - b.it.mi);
-      jumpToSpot(scored[0].it.s);
-      setShowV(true);
+      jumpToSpot(scored[0].it.s, true);
     }
   };
   const locate = async (lbl) => {
@@ -656,9 +693,9 @@ function App() {
   const pickPlace = (g) => {
     setQ("");
     if (g.t === "geo") { applyNear(g.label, g.la, g.lo); return; }
-    if (g.t === "sp") { const home = CORR.find((c) => c.species.includes(g.sp)); if (!cor.species.includes(g.sp) && home) { skipReset.current = true; setCid(home.id); } setSp(g.sp); setShowV(false); setView("spot"); return; }
+    if (g.t === "sp") { pickSpecies(g.sp); return; }
     if (g.t === "spot") { const s = SPOTS.find((x) => x.id === g.id); if (s) jumpToSpot(s); return; }
-    skipReset.current = true; setCid(g.cid); setShowV(true); setView("spot");
+    skipReset.current = true; setCid(g.cid); setView("spot");
     if (g.sub !== "region") locate(g.label);
   };
   const searchUI = (
@@ -724,7 +761,6 @@ function App() {
   const label = { fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 };
   const h = { fontFamily: F.disp, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 };
 
-  const vlist = showV ? verdicts(cid, date) : [];
   const svg = dm && ctxToday.events ? (() => {
     const W = 340, H = 150, topPad = 24, botPad = 26;
     const t0 = new Date(date); t0.setHours(4, 0, 0, 0); const t1 = new Date(date); t1.setHours(23, 0, 0, 0);
@@ -788,31 +824,26 @@ function App() {
         {view === "home" && (
           <div>
             <div style={{ margin: "24px 0 8px", ...h, fontSize: "clamp(32px, 10vw, 46px)", lineHeight: 1.04 }}>WHERE ARE YOU FISHING?</div>
-            <div style={{ color: C.stone, fontSize: 15, lineHeight: 1.55, marginBottom: 14 }}>Live scores, real tides, and a 30-day outlook for {SPOTS.length} fly spots from Maine to the Bahamas. Type a town, or take today's call.</div>
+            <div style={{ color: C.stone, fontSize: 15, lineHeight: 1.55, marginBottom: 14 }}>Live scores, real tides, and a 30-day outlook for {SPOTS.length} fly spots from Maine to the Bahamas. Type a town, pick your fish, or tap a pin.</div>
             {searchUI}
             <button onClick={locateMe} style={{ width: "100%", background: C.blaze, color: C.ink, border: "none", borderRadius: 12, padding: "13px 14px", fontFamily: F.disp, fontWeight: 700, fontSize: 17, letterSpacing: 0.5, cursor: "pointer", marginBottom: 8 }}>USE MY LOCATION</button>
             {geoMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.dim, marginBottom: 8 }}>{geoMsg}</div>}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
+              <div style={{ flex: 1, height: 1, background: C.line }} />
+              <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1.2 }}>OR PICK YOUR FISH</div>
+              <div style={{ flex: 1, height: 1, background: C.line }} />
+            </div>
+            <select value="" onChange={(e) => { if (e.target.value) pickSpecies(e.target.value); }}
+              style={{ width: "100%", background: C.panel, color: C.bone, border: `1px solid ${C.line}`, borderRadius: 12, padding: "13px 12px", fontSize: 14.5, marginBottom: 14, fontFamily: F.body }}>
+              <option value="" disabled>Pick a species, I'll put you on today's best water for it</option>
+              {Object.keys(SPX).filter((k) => homeSpBest[k]).map((k) => (
+                <option key={k} value={k}>{SPX[k].name} · best today: {homeSpBest[k].spot.name}, {to10(homeSpBest[k].peak)}/10</option>
+              ))}
+            </select>
             <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
               <div style={{ padding: "11px 14px 9px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase" }}>The water · today's scores · tap a pin</div>
               <div ref={mapRef} style={{ height: 300, width: "100%" }} />
             </div>
-            <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", margin: "20px 0 8px" }}>Today's top calls</div>
-            {homeBest.map(({ c, best }) => (
-              <button key={c.id} onClick={() => { skipReset.current = true; setCid(c.id); if (best) setSp(best.k); setManual(false); setShowV(false); setNearby(null); setView("spot"); }}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginBottom: 9, color: C.bone, cursor: "pointer" }}>
-                <div>
-                  <div style={{ ...h, fontSize: 21 }}>{c.name.toUpperCase()}</div>
-                  <div style={{ color: C.dim, fontSize: 12.5, marginTop: 2 }}>{c.species.map((k) => SPX[k].short).join(" · ")}</div>
-                  {best && <div style={{ color: C.stone, fontSize: 13.5, marginTop: 7 }}>The call: <span style={{ color: C.bone, fontWeight: 600 }}>{best.spot.name}</span>, {best.spot.area}</div>}
-                </div>
-                {best && (
-                  <div style={{ textAlign: "center", minWidth: 56 }}>
-                    <div style={{ ...h, fontSize: 32, lineHeight: 1, color: best.peak >= 70 ? C.blaze : best.peak >= 50 ? C.stone : C.dim }}>{to10(best.peak)}</div>
-                    <div style={{ fontFamily: F.mono, fontSize: 8.5, color: C.dim, marginTop: 2 }}>/10 TODAY</div>
-                  </div>
-                )}
-              </button>
-            ))}
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 16 }}>
               {["LIVE NOAA TIDES", "30-DAY CONFIDENCE BOARD", "RANKED FLY BOX", "ASK THE GUIDE"].map((t2) => (
                 <div key={t2} style={{ fontFamily: F.mono, fontSize: 10, color: C.moss, border: `1px solid ${C.moss}55`, borderRadius: 8, padding: "7px 10px" }}>{t2}</div>
@@ -824,18 +855,6 @@ function App() {
         {view === "spot" && (<React.Fragment>
         {/* search */}
         {searchUI}
-
-        {/* species verdicts after a place pick */}
-        {showV && (
-          <div className="noscroll" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 10, paddingBottom: 2 }}>
-            {vlist.map((v) => (
-              <button key={v.sp} onClick={() => { if (cor.species.includes(v.sp)) setSp(v.sp); }}
-                style={{ whiteSpace: "nowrap", flexShrink: 0, background: v.tone === "hot" ? C.blazeSoft : C.panel2, border: `1px solid ${v.tone === "hot" ? C.blaze : C.line}`, color: v.tone === "hot" ? C.blaze : v.tone === "off" ? C.dim : C.stone, borderRadius: 16, padding: "7px 11px", fontSize: 12, cursor: "pointer", fontFamily: F.mono }}>
-                {SPX[v.sp].short}: {v.label}
-              </button>
-            ))}
-          </div>
-        )}
 
         {nearby && (
           <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
@@ -863,19 +882,17 @@ function App() {
           </div>
         )}
 
-        {/* corridor + species + mode */}
-        <div className="noscroll" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: 8 }}>
-          {CORR.map((c) => (
-            <button key={c.id} onClick={() => { setCid(c.id); setShowV(false); }}
-              style={{ whiteSpace: "nowrap", flexShrink: 0, background: c.id === cid ? C.blaze : C.panel2, color: c.id === cid ? C.ink : C.stone, border: `1px solid ${c.id === cid ? C.blaze : C.line}`, borderRadius: 16, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{c.short}</button>
-          ))}
-        </div>
-        <div style={{ display: "flex", gap: 7, rowGap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
-          {cor.species.map((k) => (
-            <button key={k} onClick={() => setSp(k)}
-              style={{ background: k === sp ? C.mossDeep : C.panel2, color: k === sp ? C.bone : C.dim, border: `1px solid ${k === sp ? C.moss : C.line}`, borderRadius: 10, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{SPX[k].short}</button>
-          ))}
-          <div style={{ marginLeft: "auto", display: "flex", border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden" }}>
+        {/* species + mode */}
+        <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 6 }}>Species on this water</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "stretch" }}>
+          <select value={sp} onChange={(e) => pickSpecies(e.target.value)}
+            style={{ flex: 1, minWidth: 0, background: C.panel, color: C.bone, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 14.5, fontFamily: F.body }}>
+            {(availSpecies.includes(sp) ? availSpecies : [sp, ...availSpecies]).map((k) => {
+              const v = verdictBySp[k];
+              return <option key={k} value={k}>{SPX[k].short}{v && v.tone !== "off" ? " · " + v.label : ""}</option>;
+            })}
+          </select>
+          <div style={{ display: "flex", border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
             {["wade", "boat"].map((m) => (
               <button key={m} onClick={() => setMode(m)} style={{ background: mode === m ? C.water : "transparent", color: mode === m ? C.bone : C.dim, border: "none", padding: "7px 13px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", textTransform: "uppercase", fontFamily: F.mono, letterSpacing: 1 }}>{m}</button>
             ))}
@@ -884,7 +901,7 @@ function App() {
 
         {/* hero */}
         {dm && (
-          <div style={{ ...card, background: `linear-gradient(160deg, ${C.panel2}, ${C.panel})`, marginBottom: 12 }}>
+          <div ref={heroRef} style={{ ...card, background: `linear-gradient(160deg, ${C.panel2}, ${C.panel})`, marginBottom: 12, scrollMarginTop: 10 }}>
             <div style={label}>{manual ? "Your pick" : "The call"} · {DOW[date.getDay()]} {MN[date.getMonth()]} {date.getDate()} · {SPX[sp].name}</div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
               <div style={{ minWidth: 0 }}>
@@ -939,7 +956,7 @@ function App() {
         </div>
 
         {/* spot picker */}
-        <select value={spot.id} onChange={(e) => { setSpotId(e.target.value); setManual(true); }}
+        <select value={spot.id} onChange={(e) => { setSpotId(e.target.value); setManual(true); scrollToHero(); }}
           style={{ width: "100%", background: C.panel, color: C.bone, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 12px", fontSize: 14.5, marginBottom: 12, fontFamily: F.body }}>
           {(() => { const RO = ["Maine","NH Seacoast","North Shore MA","Boston Harbor","South Shore MA","Cape Cod","Cape & Islands","South Coast MA","Rhode Island","Connecticut","Long Island NY","New Jersey","North Carolina","Nature Coast","Northeast FL","East Central FL","Southeast FL","Miami","Upper Keys","Middle Keys","Lower Keys","Everglades","Southwest FL","Tampa Bay","Abaco","Grand Bahama","Andros","Eleuthera","Exuma","Long Island"]; const ix = (r) => { const i = RO.indexOf(r); return i === -1 ? 999 : i; }; return [...new Set(spots.map((s) => s.reg))].sort((a, b) => ix(a) - ix(b)); })().map((rg) => (
             <optgroup key={rg} label={rg}>
@@ -977,7 +994,7 @@ function App() {
               </div>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
                 <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>MOON</div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{moonName(moonP)}</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}><span style={{ fontSize: 19, marginRight: 6, verticalAlign: "-2px" }}>{moonEmoji(moonP)}</span>{moonName(moonP)}</div>
               </div>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
                 <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>TIDE NOW</div>
@@ -1063,7 +1080,7 @@ function App() {
             <div style={card}>
               <div style={label}>The milk run · backups</div>
               {ranking.filter((r) => r.spot.id !== spot.id).slice(0, 2).map((r) => (
-                <button key={r.spot.id} onClick={() => { setSpotId(r.spot.id); setManual(true); }}
+                <button key={r.spot.id} onClick={() => { setSpotId(r.spot.id); setManual(true); scrollToHero(); }}
                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 12px", marginBottom: 8, cursor: "pointer", color: C.bone, textAlign: "left" }}>
                   <div><div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.spot.name}</div><div style={{ color: C.dim, fontSize: 12.5 }}>{r.spot.area}</div></div>
                   <div style={{ ...h, fontSize: 22, color: r.peak >= 70 ? C.blaze : C.stone }}>{to10(r.peak)}</div>
