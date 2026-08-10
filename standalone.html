@@ -2149,7 +2149,7 @@ function App() {
 
         {/* header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div onClick={() => { location.hash = ""; location.reload(); }} title="Reset" style={{ ...h, fontSize: "clamp(28px, 8vw, 34px)", lineHeight: 1, cursor: "pointer", userSelect: "none" }}><span style={{ color: C.blaze }}>FLY</span><span style={{ color: C.bone }}>GUIDE</span></div>
+          <img src="logo.png" alt="FlyGuide" onClick={() => { location.hash = ""; location.reload(); }} title="Reset" style={{ height: "clamp(46px, 13vw, 58px)", width: "auto", display: "block", cursor: "pointer", userSelect: "none" }} />
           <button onClick={() => { location.hash = ""; location.reload(); }} style={{ background: "none", border: `1px solid ${C.line}`, color: C.dim, borderRadius: 8, padding: "6px 11px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer" }}>RESET</button>
         </div>
         <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1, marginTop: 5 }}>THE GUIDE'S CALL · 30 DAYS OUT</div>
