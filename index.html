@@ -893,12 +893,45 @@ function App() {
   const [planReq, setPlanReq] = useState(null);
   const [planRes, setPlanRes] = useState(null);
   const [planMsg, setPlanMsg] = useState("");
+  const [planSugs, setPlanSugs] = useState([]);
+  const planCoords = useRef(null);
+  useEffect(() => {
+    const t = plan.place.trim();
+    if (planCoords.current && planCoords.current.label === t) { setPlanSugs([]); return; }
+    if (t.length < 2 || /^\d/.test(t)) { setPlanSugs([]); return; }
+    const q2 = t.toLowerCase();
+    const local = [];
+    CORR.forEach((c) => (c.towns || []).forEach((tn) => { const k = tn.toLowerCase(); if (k.startsWith(q2) || (q2.length >= 3 && k.includes(q2))) local.push({ label: tn, sub: c.short }); }));
+    setPlanSugs(local.slice(0, 5));
+    if (t.length < 3) return;
+    let alive = true;
+    const timer = setTimeout(async () => {
+      try {
+        const name = t.split(",")[0].replace(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME)$/i, "");
+        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
+        const j = await r.json();
+        if (!alive) return;
+        const seen = new Set(local.map((x) => x.label.toLowerCase().split(" ")[0].replace(",", "")));
+        const geo = (j.results || []).filter((x) => x.country_code === "US" || x.country_code === "BS")
+          .map((x) => ({ label: `${x.name}, ${x.admin1 || x.country || ""}`, sub: Math.round(nearestSpots(x.latitude, x.longitude, 1)[0].mi) + " mi to water", la: x.latitude, lo: x.longitude }))
+          .filter((x) => !seen.has(x.label.toLowerCase().split(" ")[0].replace(",", "")));
+        setPlanSugs([...local, ...geo].slice(0, 6));
+      } catch (e) {}
+    }, 350);
+    return () => { alive = false; clearTimeout(timer); };
+  }, [plan.place]);
+  const pickPlanSug = (s) => {
+    planCoords.current = s.la != null ? { label: s.label, la: s.la, lo: s.lo } : null;
+    setPlan((p) => ({ ...p, place: s.label }));
+    setPlanSugs([]);
+  };
   const runPlan = async () => {
     if (planBusy) return;
     if (!plan.place.trim()) { setPlanMsg("Type a town or zip first."); return; }
-    setPlanBusy(true); setPlanMsg(""); setPlanRes(null); setPlanReq(null);
+    setPlanBusy(true); setPlanMsg(""); setPlanRes(null); setPlanReq(null); setPlanSugs([]);
     try {
-      const g = await geoLookup(plan.place);
+      const pc = planCoords.current;
+      const g = pc && pc.label === plan.place.trim() ? pc : await geoLookup(plan.place);
       if (!g) { setPlanMsg("Could not place that town. Try the nearest bigger town or a zip."); setPlanBusy(false); return; }
       const startD = dayStart(new Date(plan.start + "T12:00:00"));
       const off0 = Math.round((startD - today) / 86400000);
@@ -1149,8 +1182,19 @@ function App() {
             </div>
             <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
               <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 }}>Plan a trip · the best water each day of your window</div>
-              <input value={plan.place} onChange={(e) => setPlan({ ...plan, place: e.target.value })} onKeyDown={(e) => e.key === "Enter" && runPlan()} placeholder="Town or zip you're staying near" type="search" autoComplete="off" autoCorrect="off" spellCheck={false}
-                style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
+              <div style={{ position: "relative" }}>
+                <input value={plan.place} onChange={(e) => { planCoords.current = null; setPlan({ ...plan, place: e.target.value }); }} onKeyDown={(e) => { if (e.key === "Enter") { if (planSugs[0]) pickPlanSug(planSugs[0]); else runPlan(); } }} placeholder="Town or zip you're staying near" type="search" autoComplete="off" autoCorrect="off" spellCheck={false}
+                  style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
+                {planSugs.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
+                    {planSugs.map((s, i) => (
+                      <button key={i} onClick={() => pickPlanSug(s)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: i ? `1px solid ${C.line}` : "none", color: C.bone, padding: "12px 12px", fontSize: 14.5, cursor: "pointer", minHeight: 44 }}>
+                        <span>{s.label}</span><span style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginLeft: 10 }}>{s.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div style={{ display: "flex", gap: 7, marginTop: 8 }}>
                 <input type="date" value={plan.start} min={iso(today)} max={iso(addDays(today, 29))} onChange={(e) => setPlan({ ...plan, start: e.target.value })}
                   style={{ flex: 1.3, minWidth: 0, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "10px 8px", fontFamily: F.mono, fontSize: 12, outline: "none", colorScheme: "dark" }} />
@@ -1477,14 +1521,9 @@ function App() {
             </div>
             <div style={{ fontSize: 13.5, color: C.stone, lineHeight: 1.5, margin: "6px 0 14px" }}>Save your spots and places, they lead the home screen on every device. No password, no spam.</div>
             {CFG.AUTH_GOOGLE && <button onClick={signInGoogle} style={{ width: "100%", background: C.bone, color: C.ink, border: "none", borderRadius: 10, padding: "12px 12px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer" }}>CONTINUE WITH GOOGLE</button>}
-            {CFG.AUTH_GOOGLE && <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0" }}>
-              <div style={{ flex: 1, height: 1, background: C.line }} />
-              <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1 }}>OR</div>
-              <div style={{ flex: 1, height: 1, background: C.line }} />
-            </div>}
-            <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMagicLink()} placeholder="you@email.com" type="email" autoComplete="email"
-              style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
-            <button onClick={sendMagicLink} style={{ width: "100%", marginTop: 8, background: "none", border: `1px solid ${C.moss}`, color: C.moss, borderRadius: 10, padding: "11px 12px", fontFamily: F.mono, fontSize: 11.5, letterSpacing: 1, cursor: "pointer" }}>EMAIL ME A SIGN IN LINK</button>
+            {!CFG.AUTH_GOOGLE && <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMagicLink()} placeholder="you@email.com" type="email" autoComplete="email"
+              style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />}
+            {!CFG.AUTH_GOOGLE && <button onClick={sendMagicLink} style={{ width: "100%", marginTop: 8, background: "none", border: `1px solid ${C.moss}`, color: C.moss, borderRadius: 10, padding: "11px 12px", fontFamily: F.mono, fontSize: 11.5, letterSpacing: 1, cursor: "pointer" }}>EMAIL ME A SIGN IN LINK</button>}
             {authMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone, marginTop: 10, lineHeight: 1.5 }}>{authMsg}</div>}
           </div>
         </div>
