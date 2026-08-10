@@ -759,7 +759,7 @@ function App() {
       if (nx) lines.push("NEXT TIDE: " + nx);
       lines.push("WIND " + Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + " MPH · WATER ~" + (ctxToday.sst + sstOffFor(spot, date)) + "F · " + moonName(moonP).toUpperCase());
       lines.forEach((L) => { x.fillText(L, 72, y); y += 50; });
-      x.fillStyle = "#5A6468"; x.font = "25px Menlo, monospace"; x.fillText("THE GUIDE'S CALL, EVERY DAY · FLYGUIDE.GITHUB.IO", 72, 1002);
+      x.fillStyle = "#5A6468"; x.font = "25px Menlo, monospace"; x.fillText("THE GUIDE'S CALL, EVERY DAY · MYFLYGUIDE.GITHUB.IO", 72, 1002);
       const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
       const file = new File([blob], "flyguide-" + spot.id + "-" + iso(date) + ".png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "FlyGuide: " + spot.name }); }
@@ -1476,12 +1476,12 @@ function App() {
               <button onClick={() => setAuthOpen(false)} style={{ background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
             </div>
             <div style={{ fontSize: 13.5, color: C.stone, lineHeight: 1.5, margin: "6px 0 14px" }}>Save your spots and places, they lead the home screen on every device. No password, no spam.</div>
-            <button onClick={signInGoogle} style={{ width: "100%", background: C.bone, color: C.ink, border: "none", borderRadius: 10, padding: "12px 12px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer" }}>CONTINUE WITH GOOGLE</button>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0" }}>
+            {CFG.AUTH_GOOGLE && <button onClick={signInGoogle} style={{ width: "100%", background: C.bone, color: C.ink, border: "none", borderRadius: 10, padding: "12px 12px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer" }}>CONTINUE WITH GOOGLE</button>}
+            {CFG.AUTH_GOOGLE && <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0" }}>
               <div style={{ flex: 1, height: 1, background: C.line }} />
               <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1 }}>OR</div>
               <div style={{ flex: 1, height: 1, background: C.line }} />
-            </div>
+            </div>}
             <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMagicLink()} placeholder="you@email.com" type="email" autoComplete="email"
               style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
             <button onClick={sendMagicLink} style={{ width: "100%", marginTop: 8, background: "none", border: `1px solid ${C.moss}`, color: C.moss, borderRadius: 10, padding: "11px 12px", fontFamily: F.mono, fontSize: 11.5, letterSpacing: 1, cursor: "pointer" }}>EMAIL ME A SIGN IN LINK</button>
