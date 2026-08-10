@@ -7,6 +7,9 @@
 <meta name="description" content="Fly fishing intelligence for striped bass, false albacore, tarpon, snook, redfish, and bonefish. Daily scores, 30-day outlook with honest confidence, tribal knowledge chat guide." />
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#14181A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="FlyGuide" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -1349,12 +1352,17 @@ g.FG_SPOTS = [
 </script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; }
-  * { -webkit-tap-highlight-color: transparent; }
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
   ::selection { background: #E8722A44; }
   .noscroll::-webkit-scrollbar { display: none; }
-  .noscroll { scrollbar-width: none; }
+  .noscroll { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   input::placeholder { color: #6E7A72; }
-  button { font-family: inherit; }
+  button, select, a { font-family: inherit; touch-action: manipulation; }
+  input, select { font-size: 16px !important; }
+  button { min-height: 40px; }
+  @media (max-width: 520px) {
+    button { min-height: 44px; }
+  }
 </style>
 </head>
 <body>
@@ -1834,7 +1842,16 @@ function App() {
   useEffect(() => { if (!manual && topId) setSpotId(topId); }, [topId, manual]);
   const dm = dayModels.find((d) => d.spot.id === spot.id) || ranking[0] || null;
   const dmById = (id) => dayModels.find((d) => d.spot.id === id);
-  useEffect(() => { history.replaceState(null, "", `#spot=${spot.id}&c=${cid}&sp=${sp}`); }, [spot.id, cid, sp]);
+  const [view, setView] = useState(hash.spot ? "spot" : "home");
+  useEffect(() => { if (view === "spot") history.replaceState(null, "", `#spot=${spot.id}&c=${cid}&sp=${sp}`); else history.replaceState(null, "", location.pathname + location.search); }, [spot.id, cid, sp, view]);
+  const homeBest = useMemo(() => CORR.map((c) => {
+    let best = null;
+    c.species.forEach((k) => SPOTS.filter((s) => s.c === c.id && (s.sp[k] || 0) > 0).forEach((s) => {
+      const d = computeDay(s, k, today, ctxFor(today, s));
+      if (!best || d.peak > best.peak) best = { spot: s, k, peak: d.peak };
+    }));
+    return { c, best };
+  }), [tides, wx, sst, mode]);
   const [copied, setCopied] = useState(false);
   const shareSpot = () => { try { navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
 
@@ -1866,7 +1883,7 @@ function App() {
   const conf = confidence(dayOff, spot);
   const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
 
-  const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); };
+  const jumpToSpot = (s) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); setView("spot"); };
   const applyNear = (lbl, la, lo) => {
     const sorted = nearestSpots(la, lo, SPOTS.length);
     const close = sorted.filter((x) => x.mi <= 30);
@@ -1899,11 +1916,26 @@ function App() {
   const pickPlace = (g) => {
     setQ("");
     if (g.t === "geo") { applyNear(g.label, g.la, g.lo); return; }
-    if (g.t === "sp") { const home = CORR.find((c) => c.species.includes(g.sp)); if (!cor.species.includes(g.sp) && home) { skipReset.current = true; setCid(home.id); } setSp(g.sp); setShowV(false); return; }
+    if (g.t === "sp") { const home = CORR.find((c) => c.species.includes(g.sp)); if (!cor.species.includes(g.sp) && home) { skipReset.current = true; setCid(home.id); } setSp(g.sp); setShowV(false); setView("spot"); return; }
     if (g.t === "spot") { const s = SPOTS.find((x) => x.id === g.id); if (s) jumpToSpot(s); return; }
-    skipReset.current = true; setCid(g.cid); setShowV(true);
+    skipReset.current = true; setCid(g.cid); setShowV(true); setView("spot");
     if (g.sub !== "region") locate(g.label);
   };
+  const searchUI = (
+    <div style={{ position: "relative", marginBottom: 10 }}>
+      <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { if (allSugs[0]) pickPlace(allSugs[0]); else if (q.trim().length >= 3) { const t = q; setQ(""); locate(t); } } }} placeholder="Type a town name or zip code"
+        style={{ width: "100%", background: C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "14px 14px", outline: "none", fontFamily: F.body }} />
+      {allSugs.length > 0 && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
+          {allSugs.map((g, i) => (
+            <button key={i} onClick={() => pickPlace(g)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: i ? `1px solid ${C.line}` : "none", color: C.bone, padding: "13px 14px", fontSize: 15, cursor: "pointer", minHeight: 46 }}>
+              <span>{g.label}</span><span style={{ fontFamily: F.mono, fontSize: 10.5, color: g.t === "sp" ? C.blaze : C.dim, marginLeft: 10 }}>{g.sub}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
   const send = async (forced) => {
     const text = (forced != null ? forced : draft).trim(); if (!text) return;
     setDraft("");
@@ -1981,28 +2013,20 @@ function App() {
             <rect x={xa} y={topPad - 4} width={xb - xa} height={H - topPad - botPad + 8} fill={C.blaze} opacity="0.13" />
             <line x1={xa} x2={xa} y1={topPad - 4} y2={H - botPad + 4} stroke={C.blaze} strokeWidth="1" opacity="0.5" />
             <line x1={xb} x2={xb} y1={topPad - 4} y2={H - botPad + 4} stroke={C.blaze} strokeWidth="1" opacity="0.5" />
-            <text x={(xa + xb) / 2} y={12} textAnchor="middle" fill={C.blaze} fontSize="8.5" fontFamily="IBM Plex Mono">BITE {a > 12 ? a - 12 : a}{a >= 12 ? "P" : "A"}-{b2 > 12 ? b2 - 12 : b2}{b2 >= 12 ? "P" : "A"}</text>
+            {(xb - xa) >= 62 && <text x={(xa + xb) / 2} y={13} textAnchor="middle" fill={C.blaze} fontSize="9.5" fontFamily="IBM Plex Mono">BITE {a > 12 ? a - 12 : a}{a >= 12 ? "P" : "A"}-{b2 > 12 ? b2 - 12 : b2}{b2 >= 12 ? "P" : "A"}</text>}
           </g>
         ); })}
         <path d={path} fill="none" stroke={C.water} strokeWidth="2.5" />
-        {evs.map((e, i) => { const lx = Math.min(Math.max(x(e.date), 30), W - 30); return (
-          <g key={"e" + i}>
-            <circle cx={x(e.date)} cy={y(e.v)} r="3" fill={C.stone} />
-            <text x={lx} y={e.hl === "H" ? Math.max(y(e.v) - 14, topPad + 8) : Math.min(y(e.v) + 15, H - botPad - 2)} textAnchor="middle" fill={C.stone} fontSize="9.5" fontFamily="IBM Plex Mono">{e.hl === "H" ? "HIGH" : "LOW"} {clock(e.date)}</text>
-            <text x={lx} y={e.hl === "H" ? Math.max(y(e.v) - 4, topPad + 18) : Math.min(y(e.v) + 25, H - botPad + 8)} textAnchor="middle" fill={C.dim} fontSize="8.5" fontFamily="IBM Plex Mono">{e.v.toFixed(1)}ft</text>
-          </g>
-        ); })}
+        {evs.map((e, i) => (
+          <circle key={"e" + i} cx={x(e.date)} cy={y(e.v)} r="3.5" fill={e.hl === "H" ? C.bone : C.stone} />
+        ))}
         {sunT.map((s2, i) => (
-          <g key={"s" + i}>
-            <line x1={x(s2.t)} x2={x(s2.t)} y1={topPad - 4} y2={topPad + 6} stroke={C.moss} strokeWidth="2" />
-            <text x={x(s2.t)} y={topPad + 16} textAnchor="middle" fill={C.moss} fontSize="8" fontFamily="IBM Plex Mono">{s2.l} {clock(s2.t)}</text>
-          </g>
+          <line key={"s" + i} x1={x(s2.t)} x2={x(s2.t)} y1={topPad - 4} y2={topPad + 5} stroke={C.moss} strokeWidth="2" />
         ))}
         {nowX != null && (
           <g>
             <line x1={nowX} x2={nowX} y1={topPad - 4} y2={H - botPad + 4} stroke={C.bone} strokeWidth="1" strokeDasharray="3,3" opacity="0.8" />
-            {nowTs && <circle cx={nowX} cy={y(nowTs.h)} r="4" fill={C.blaze} />}
-            <text x={nowX} y={H - 18} textAnchor="middle" fill={C.bone} fontSize="8" fontFamily="IBM Plex Mono">NOW</text>
+            {nowTs && <circle cx={nowX} cy={y(nowTs.h)} r="4.5" fill={C.blaze} />}
           </g>
         )}
       </svg>
@@ -2010,7 +2034,7 @@ function App() {
   })() : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.ink, color: C.bone, fontFamily: F.body, paddingBottom: 90 }}>
+    <div style={{ minHeight: "100vh", background: C.ink, color: C.bone, fontFamily: F.body, paddingBottom: "calc(90px + env(safe-area-inset-bottom))" }}>
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 13px" }}>
 
         {/* header */}
@@ -2021,20 +2045,39 @@ function App() {
         <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1, marginTop: 5 }}>THE GUIDE'S CALL · 30 DAYS OUT</div>
         <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, margin: "4px 0 14px", opacity: 0.8 }}>Board recomputed {clock(now)} · live data refreshes every visit</div>
 
-        {/* search */}
-        <div style={{ position: "relative", marginBottom: 10 }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { if (allSugs[0]) pickPlace(allSugs[0]); else if (q.trim().length >= 3) { const t = q; setQ(""); locate(t); } } }} placeholder="Type a town name or zip code"
-            style={{ width: "100%", boxSizing: "border-box", background: C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "13px 14px", fontSize: 15, outline: "none", fontFamily: F.body }} />
-          {(() => { const all = allSugs; return all.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
-              {all.map((g, i) => (
-                <button key={i} onClick={() => pickPlace(g)} style={{ display: "flex", justifyContent: "space-between", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: i ? `1px solid ${C.line}` : "none", color: C.bone, padding: "11px 14px", fontSize: 14.5, cursor: "pointer" }}>
-                  <span>{g.label}</span><span style={{ fontFamily: F.mono, fontSize: 10.5, color: g.t === "sp" ? C.blaze : C.dim, marginLeft: 10 }}>{g.sub}</span>
-                </button>
+        {view === "home" && (
+          <div>
+            <div style={{ margin: "24px 0 8px", ...h, fontSize: "clamp(32px, 10vw, 46px)", lineHeight: 1.04 }}>WHERE ARE YOU FISHING?</div>
+            <div style={{ color: C.stone, fontSize: 15, lineHeight: 1.55, marginBottom: 14 }}>Live scores, real tides, and a 30-day outlook for {SPOTS.length} fly spots from Maine to the Bahamas. Type a town, or take today's call.</div>
+            {searchUI}
+            <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", margin: "20px 0 8px" }}>Today's top calls</div>
+            {homeBest.map(({ c, best }) => (
+              <button key={c.id} onClick={() => { skipReset.current = true; setCid(c.id); if (best) setSp(best.k); setManual(false); setShowV(false); setNearby(null); setView("spot"); }}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, marginBottom: 9, color: C.bone, cursor: "pointer" }}>
+                <div>
+                  <div style={{ ...h, fontSize: 21 }}>{c.name.toUpperCase()}</div>
+                  <div style={{ color: C.dim, fontSize: 12.5, marginTop: 2 }}>{c.species.map((k) => SPX[k].short).join(" · ")}</div>
+                  {best && <div style={{ color: C.stone, fontSize: 13.5, marginTop: 7 }}>The call: <span style={{ color: C.bone, fontWeight: 600 }}>{best.spot.name}</span>, {best.spot.area}</div>}
+                </div>
+                {best && (
+                  <div style={{ textAlign: "center", minWidth: 56 }}>
+                    <div style={{ ...h, fontSize: 32, lineHeight: 1, color: best.peak >= 70 ? C.blaze : best.peak >= 50 ? C.stone : C.dim }}>{to10(best.peak)}</div>
+                    <div style={{ fontFamily: F.mono, fontSize: 8.5, color: C.dim, marginTop: 2 }}>/10 TODAY</div>
+                  </div>
+                )}
+              </button>
+            ))}
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 16 }}>
+              {["LIVE NOAA TIDES", "30-DAY CONFIDENCE BOARD", "RANKED FLY BOX", "ASK THE GUIDE"].map((t2) => (
+                <div key={t2} style={{ fontFamily: F.mono, fontSize: 10, color: C.moss, border: `1px solid ${C.moss}55`, borderRadius: 8, padding: "7px 10px" }}>{t2}</div>
               ))}
             </div>
-          ); })()}
-        </div>
+          </div>
+        )}
+
+        {view === "spot" && (<React.Fragment>
+        {/* search */}
+        {searchUI}
 
         {/* species verdicts after a place pick */}
         {showV && (
@@ -2135,7 +2178,7 @@ function App() {
               const best = i === bestI;
               return (
                 <button key={i} onClick={() => setDate(b.date)}
-                  style={{ flexShrink: 0, width: 52, background: sel ? C.panel2 : "transparent", border: `1px solid ${sel ? C.blaze : best ? C.moss : C.line}`, borderRadius: 10, padding: "7px 4px 6px", cursor: "pointer" }}>
+                  style={{ flexShrink: 0, width: 56, background: sel ? C.panel2 : "transparent", border: `1px solid ${sel ? C.blaze : best ? C.moss : C.line}`, borderRadius: 10, padding: "7px 4px 6px", cursor: "pointer" }}>
                   <div style={{ fontFamily: F.mono, fontSize: 9.5, color: best ? C.moss : C.dim }}>{best ? "BEST" : DOW[b.date.getDay()].toUpperCase()}</div>
                   <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone }}>{b.date.getMonth() + 1}/{b.date.getDate()}</div>
                   <div style={{ height: 26, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "4px 0 3px" }}>
@@ -2165,6 +2208,18 @@ function App() {
           <div style={card}>
             <div style={label}>Tide & sky</div>
             {svg || <div style={{ fontSize: 13.5, color: C.dim, lineHeight: 1.5 }}>{spot.station ? "Pulling tide predictions..." : CFG.WORLDTIDES_KEY ? "Pulling WorldTides for this flat..." : "No tide station covers this water. Scores here run on season, light, and weather, honestly labeled at lower confidence. Drop a WorldTides key in data/spots.js to light up exact times."}</div>}
+            {ctxToday.events && (() => {
+              const t0 = new Date(date); t0.setHours(0, 0, 0, 0); const t1 = new Date(date); t1.setHours(23, 59, 0, 0);
+              const evs2 = ctxToday.events.filter((e) => e.date >= t0 && e.date <= t1);
+              const chip = { whiteSpace: "nowrap", flexShrink: 0, fontFamily: F.mono, fontSize: 11, background: C.tile, border: `1px solid ${C.line}`, borderRadius: 8, padding: "8px 10px" };
+              return (
+                <div className="noscroll" style={{ display: "flex", gap: 6, overflowX: "auto", marginTop: 10 }}>
+                  {evs2.map((e, i) => <div key={i} style={{ ...chip, color: e.hl === "H" ? C.bone : C.stone }}>{e.hl === "H" ? "HIGH" : "LOW"} {clock(e.date)} · {e.v.toFixed(1)}ft</div>)}
+                  {ctxToday.sun && <div style={{ ...chip, color: C.moss }}>SUNRISE {clock(ctxToday.sun.rise)}</div>}
+                  {ctxToday.sun && <div style={{ ...chip, color: C.moss }}>SUNSET {clock(ctxToday.sun.set)}</div>}
+                </div>
+              );
+            })()}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
                 <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>WATER</div>
@@ -2278,14 +2333,17 @@ function App() {
             )}
           </div>
         </div>
+        </React.Fragment>)}
       </div>
 
       {/* chat */}
+      {view === "spot" && (
       <button onClick={openChat}
         style={{ position: "fixed", right: 16, bottom: 16, zIndex: 60, background: C.blaze, color: C.ink, border: "none", borderRadius: 28, padding: "14px 18px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer", boxShadow: "0 8px 24px rgba(0,0,0,.45)" }}>
         {chat.open ? "CLOSE" : "ASK THE GUIDE"}
       </button>
-      {chat.open && (
+      )}
+      {view === "spot" && chat.open && (
         <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, top: "22%", zIndex: 55, background: C.panel2, borderTop: `2px solid ${C.blaze}`, borderRadius: "18px 18px 0 0", display: "flex", flexDirection: "column", maxWidth: 760, margin: "0 auto" }}>
           <div style={{ padding: "14px 16px 4px", ...h, fontSize: 20, color: C.bone }}>THE HEAD GUIDE <span style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1, fontWeight: 400 }}>{CFG.CHAT_ENDPOINT ? "· FULL AI" : "· LOCAL KNOWLEDGE"}</span></div>
           <div style={{ padding: "0 16px 8px", fontFamily: F.mono, fontSize: 10.5, color: C.moss, letterSpacing: 0.5 }}>ON: {spot.name.toUpperCase()} · {dm ? to10(dm.peak) : "?"}/10 · {DOW[date.getDay()].toUpperCase()} {MN[date.getMonth()].toUpperCase()} {date.getDate()} · {SPX[sp].short.toUpperCase()}</div>
