@@ -8,8 +8,8 @@
 g.FG_CONFIG = {
   CHAT_ENDPOINT: "",      // Supabase edge function URL for the full AI guide. Empty = built-in local guide.
   WORLDTIDES_KEY: "",     // WorldTides API key for Bahamas tide times. Empty = tide-neutral scoring with honest labeling.
-  SUPABASE_URL: "",       // Supabase project URL for sign in and favorites. Empty = no accounts, app runs exactly as before.
-  SUPABASE_ANON_KEY: "",  // Supabase anon public key. Safe to publish, row level security protects the data.
+  SUPABASE_URL: "https://jluctcywtnyaxmaxvxbw.supabase.co",       // Supabase project URL for sign in and favorites. Empty = no accounts, app runs exactly as before.
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsdWN0Y3l3dG55YXhtYXh2eGJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNzY0NDIsImV4cCI6MjEwMTk1MjQ0Mn0.fHbIm3amgzoMI_G3eSiqVxGxdyu6340hrJMKX4HBpCk",  // Supabase anon public key. Safe to publish, row level security protects the data.
   GOATCOUNTER_CODE: "",   // GoatCounter site code for privacy friendly analytics. Empty = no analytics script loads.
   AUTH_GOOGLE: false,     // Flip to true only after the Google provider is configured in Supabase. Email sign in links work without it.
   SITE_URL: "https://myflyguide.github.io"
@@ -93,7 +93,35 @@ g.FG_CORRIDORS = [
       albie:   [0, 0, 0, 0, 0, 0.05, 0.15, 0.55, 1.0, 0.9, 0.25, 0]
     },
     zips: ["038", "039", "019", "020", "021", "025", "026", "028", "029", "063", "115", "119", "077", "087", "285"],
-    towns: ["Portsmouth NH", "Rye NH", "Hampton NH", "Stratham NH", "Newburyport MA", "Chatham MA", "Brewster MA", "Provincetown MA", "Marthas Vineyard MA", "Montauk NY", "Narragansett RI", "Watch Hill RI", "Westerly RI", "Sandy Hook NJ", "Seaside Park NJ", "Harkers Island NC", "Beaufort NC"],
+    towns: ["Portsmouth NH", "Rye NH", "Hampton NH", "Stratham NH", "Newburyport MA", "Chatham MA", "Brewster MA", "Provincetown MA", "Marthas Vineyard MA", "Montauk NY", "Narragansett RI", "Watch Hill RI", "Westerly RI", "Sandy Hook NJ", "Seaside Park NJ", "Harkers Island NC", "Beaufort NC", "Kittery ME", "York ME", "Ogunquit ME", "Wells ME", "Kennebunkport ME", "Kennebunk ME", "Biddeford ME", "Old Orchard Beach ME", "Saco ME", "Scarborough ME", "Portland ME", "South Portland ME", "Cape Elizabeth ME", "Falmouth ME", "Yarmouth ME", "Freeport ME", "Brunswick ME", "Bath ME", "Phippsburg ME", "Georgetown ME", "Boothbay Harbor ME", "New Castle NH", "Seabrook NH", "Exeter NH", "Dover NH", "Durham NH", "Salisbury MA", "Amesbury MA", "Newbury MA", "Rowley MA", "Ipswich MA", "Essex MA", "Gloucester MA", "Rockport MA", "Manchester-by-the-Sea MA", "Beverly MA", "Salem MA", "Marblehead MA", "Swampscott MA", "Lynn MA", "Nahant MA", "Revere MA", "Winthrop MA", "Boston MA", "Quincy MA", "Weymouth MA", "Hingham MA", "Hull MA", "Cohasset MA", "Scituate MA", "Marshfield MA", "Duxbury MA", "Kingston MA", "Plymouth MA", "Bourne MA", "Sandwich MA", "Falmouth MA", "Woods Hole MA", "Mashpee MA", "Barnstable MA", "Hyannis MA", "Yarmouth MA", "Dennis MA", "Harwich MA", "Orleans MA", "Eastham MA", "Wellfleet MA", "Truro MA", "Nantucket MA", "Edgartown MA", "Oak Bluffs MA", "Vineyard Haven MA", "Wareham MA", "Marion MA", "Mattapoisett MA", "Fairhaven MA", "New Bedford MA", "Dartmouth MA", "Westport MA", "Newport RI", "Middletown RI", "Portsmouth RI", "Jamestown RI", "Bristol RI", "Barrington RI", "Warwick RI", "East Greenwich RI", "North Kingstown RI", "Wickford RI", "South Kingstown RI", "Wakefield RI", "Charlestown RI", "Block Island RI", "Stonington CT", "Mystic CT", "Groton CT", "New London CT", "Waterford CT", "Niantic CT", "Old Lyme CT", "Old Saybrook CT", "Westbrook CT", "Clinton CT", "Madison CT", "Guilford CT", "Branford CT", "New Haven CT", "Milford CT", "Stratford CT", "Bridgeport CT", "Fairfield CT", "Westport CT", "Norwalk CT", "Stamford CT", "Greenwich CT", "Amagansett NY", "East Hampton NY", "Sag Harbor NY", "Southampton NY", "Hampton Bays NY", "Greenport NY", "Shelter Island NY", "Riverhead NY", "Center Moriches NY", "Patchogue NY", "Babylon NY", "Bay Shore NY", "Long Beach NY", "Rockaway NY", "Port Jefferson NY", "Huntington NY", "Oyster Bay NY", "City Island NY", "Atlantic Highlands NJ", "Highlands NJ", "Sea Bright NJ", "Long Branch NJ", "Asbury Park NJ", "Belmar NJ", "Manasquan NJ", "Point Pleasant NJ", "Bay Head NJ", "Toms River NJ", "Seaside Heights NJ", "Barnegat Light NJ", "Beach Haven NJ", "Atlantic City NJ", "Ocean City NJ", "Sea Isle City NJ", "Avalon NJ", "Stone Harbor NJ", "Wildwood NJ", "Cape May NJ", "Morehead City NC", "Atlantic Beach NC", "Emerald Isle NC", "Swansboro NC", "Cedar Island NC"],
+    rivers: [
+      { n: "York River", st: "ME", la: 43.130, lo: -70.646 }, { n: "Kennebec River", st: "ME", la: 43.744, lo: -69.776 },
+      { n: "Saco River", st: "ME", la: 43.458, lo: -70.377 }, { n: "Mousam River", st: "ME", la: 43.346, lo: -70.520 },
+      { n: "Scarborough River", st: "ME", la: 43.549, lo: -70.320 }, { n: "Presumpscot River", st: "ME", la: 43.687, lo: -70.245 },
+      { n: "Sheepscot River", st: "ME", la: 43.790, lo: -69.660 },
+      { n: "Piscataqua River", st: "NH", la: 43.071, lo: -70.711 }, { n: "Squamscott River", st: "NH", la: 43.045, lo: -70.918 },
+      { n: "Hampton River", st: "NH", la: 42.897, lo: -70.810 }, { n: "Lamprey River", st: "NH", la: 43.077, lo: -70.935 },
+      { n: "Oyster River", st: "NH", la: 43.128, lo: -70.905 }, { n: "Bellamy River", st: "NH", la: 43.166, lo: -70.870 },
+      { n: "Merrimack River", st: "MA", la: 42.816, lo: -70.810 }, { n: "Parker River", st: "MA", la: 42.755, lo: -70.800 },
+      { n: "Ipswich River", st: "MA", la: 42.685, lo: -70.816 }, { n: "Essex River", st: "MA", la: 42.648, lo: -70.748 },
+      { n: "Annisquam River", st: "MA", la: 42.661, lo: -70.679 }, { n: "North River", st: "MA", la: 42.163, lo: -70.705 },
+      { n: "Jones River", st: "MA", la: 41.996, lo: -70.717 }, { n: "Westport River", st: "MA", la: 41.508, lo: -71.083 },
+      { n: "Slocums River", st: "MA", la: 41.532, lo: -70.976 }, { n: "Mattapoisett River", st: "MA", la: 41.655, lo: -70.815 },
+      { n: "Weweantic River", st: "MA", la: 41.740, lo: -70.735 }, { n: "Taunton River", st: "MA", la: 41.690, lo: -71.160 },
+      { n: "Narrow River", st: "RI", la: 41.429, lo: -71.450 }, { n: "Pawcatuck River", st: "RI", la: 41.336, lo: -71.848 },
+      { n: "Providence River", st: "RI", la: 41.790, lo: -71.380 }, { n: "Barrington River", st: "RI", la: 41.730, lo: -71.280 },
+      { n: "Connecticut River", st: "CT", la: 41.271, lo: -72.343 }, { n: "Thames River", st: "CT", la: 41.325, lo: -72.088 },
+      { n: "Mystic River", st: "CT", la: 41.336, lo: -71.966 }, { n: "Niantic River", st: "CT", la: 41.310, lo: -72.190 },
+      { n: "Housatonic River", st: "CT", la: 41.155, lo: -73.108 }, { n: "Saugatuck River", st: "CT", la: 41.104, lo: -73.365 },
+      { n: "Norwalk River", st: "CT", la: 41.083, lo: -73.417 }, { n: "Quinnipiac River", st: "CT", la: 41.280, lo: -72.900 },
+      { n: "Hudson River", st: "NY", la: 40.700, lo: -74.015 }, { n: "Carmans River", st: "NY", la: 40.760, lo: -72.880 },
+      { n: "Nissequogue River", st: "NY", la: 40.900, lo: -73.230 }, { n: "Peconic River", st: "NY", la: 40.916, lo: -72.640 },
+      { n: "Navesink River", st: "NJ", la: 40.360, lo: -74.000 }, { n: "Shrewsbury River", st: "NJ", la: 40.370, lo: -73.980 },
+      { n: "Shark River", st: "NJ", la: 40.190, lo: -74.010 }, { n: "Manasquan River", st: "NJ", la: 40.100, lo: -74.030 },
+      { n: "Toms River", st: "NJ", la: 39.950, lo: -74.130 }, { n: "Mullica River", st: "NJ", la: 39.540, lo: -74.460 },
+      { n: "Great Egg Harbor River", st: "NJ", la: 39.300, lo: -74.640 }, { n: "Maurice River", st: "NJ", la: 39.230, lo: -75.020 },
+      { n: "Newport River", st: "NC", la: 34.720, lo: -76.680 }, { n: "North River", st: "NC", la: 34.730, lo: -76.610 }
+    ],
     regs: [
       { n: "NH Fish & Game saltwater", u: "https://www.wildlife.nh.gov/fishing-new-hampshire/saltwater-fishing" },
       { n: "MA DMF recreational regs", u: "https://www.mass.gov/info-details/recreational-saltwater-fishing-regulations" },
@@ -117,7 +145,20 @@ g.FG_CORRIDORS = [
       bonefish: [0.3, 0.3, 0.5, 0.8, 0.9, 0.85, 0.7, 0.7, 0.8, 0.9, 0.7, 0.4]
     },
     zips: ["330", "331", "332", "333", "334", "339", "341", "342", "336", "337", "327", "329", "320", "322", "346", "344"],
-    towns: ["Islamorada FL", "Marathon FL", "Key West FL", "Miami FL", "Flamingo FL", "Everglades City FL", "Chokoloskee FL", "Sanibel FL", "Boca Grande FL", "Homosassa FL", "Tampa FL", "St Petersburg FL", "Titusville FL", "Sebastian FL", "Jupiter FL", "St Augustine FL", "Jacksonville FL"],
+    towns: ["Islamorada FL", "Marathon FL", "Key West FL", "Miami FL", "Flamingo FL", "Everglades City FL", "Chokoloskee FL", "Sanibel FL", "Boca Grande FL", "Homosassa FL", "Tampa FL", "St Petersburg FL", "Titusville FL", "Sebastian FL", "Jupiter FL", "St Augustine FL", "Jacksonville FL", "Key Largo FL", "Tavernier FL", "Duck Key FL", "Big Pine Key FL", "Summerland Key FL", "Cudjoe Key FL", "Naples FL", "Marco Island FL", "Bonita Springs FL", "Fort Myers FL", "Fort Myers Beach FL", "Cape Coral FL", "Captiva FL", "St James City FL", "Punta Gorda FL", "Port Charlotte FL", "Placida FL", "Englewood FL", "Venice FL", "Sarasota FL", "Bradenton FL", "Anna Maria FL", "St Pete Beach FL", "Clearwater FL", "Dunedin FL", "Tarpon Springs FL", "New Port Richey FL", "Hudson FL", "Spring Hill FL", "Crystal River FL", "Cedar Key FL", "Key Biscayne FL", "Coral Gables FL", "Homestead FL", "Fort Lauderdale FL", "Hollywood FL", "Pompano Beach FL", "Boca Raton FL", "Delray Beach FL", "Lake Worth FL", "West Palm Beach FL", "Palm Beach FL", "Palm Beach Gardens FL", "Hobe Sound FL", "Stuart FL", "Jensen Beach FL", "Fort Pierce FL", "Vero Beach FL", "Melbourne FL", "Cocoa Beach FL", "Cape Canaveral FL", "New Smyrna Beach FL", "Daytona Beach FL", "Ormond Beach FL", "Palm Coast FL", "Ponte Vedra Beach FL", "Fernandina Beach FL", "Amelia Island FL"],
+    rivers: [
+      { n: "Homosassa River", st: "FL", la: 28.780, lo: -82.660 }, { n: "Crystal River", st: "FL", la: 28.890, lo: -82.640 },
+      { n: "Chassahowitzka River", st: "FL", la: 28.715, lo: -82.635 }, { n: "Weeki Wachee River", st: "FL", la: 28.535, lo: -82.650 },
+      { n: "Anclote River", st: "FL", la: 28.165, lo: -82.790 }, { n: "Hillsborough River", st: "FL", la: 27.940, lo: -82.460 },
+      { n: "Little Manatee River", st: "FL", la: 27.710, lo: -82.470 }, { n: "Manatee River", st: "FL", la: 27.510, lo: -82.600 },
+      { n: "Myakka River", st: "FL", la: 26.980, lo: -82.200 }, { n: "Peace River", st: "FL", la: 26.930, lo: -82.050 },
+      { n: "Caloosahatchee River", st: "FL", la: 26.520, lo: -81.950 }, { n: "Barron River", st: "FL", la: 25.850, lo: -81.390 },
+      { n: "Shark River", st: "FL", la: 25.350, lo: -81.130 }, { n: "Loxahatchee River", st: "FL", la: 26.945, lo: -80.086 },
+      { n: "St Lucie River", st: "FL", la: 27.170, lo: -80.160 }, { n: "Sebastian River", st: "FL", la: 27.860, lo: -80.490 },
+      { n: "Indian River", st: "FL", la: 27.860, lo: -80.450 }, { n: "Banana River", st: "FL", la: 28.300, lo: -80.630 },
+      { n: "Tomoka River", st: "FL", la: 29.350, lo: -81.080 }, { n: "Matanzas River", st: "FL", la: 29.720, lo: -81.240 },
+      { n: "St Johns River", st: "FL", la: 30.400, lo: -81.430 }, { n: "Nassau River", st: "FL", la: 30.510, lo: -81.460 }
+    ],
     regs: [
       { n: "FWC saltwater regs (snook stamp, tarpon C&R, slot limits)", u: "https://myfwc.com/fishing/saltwater/recreational/" }
     ],
@@ -133,7 +174,7 @@ g.FG_CORRIDORS = [
       bonefish: [0.7, 0.75, 0.9, 1.0, 1.0, 0.9, 0.7, 0.55, 0.55, 0.85, 0.9, 0.8]
     },
     zips: [],
-    towns: ["Marsh Harbour Abaco", "Cherokee Sound Abaco", "Andros Town", "Cargill Creek Andros", "Governors Harbour Eleuthera", "Rock Sound Eleuthera", "George Town Exuma", "Deadmans Cay Long Island", "McLeans Town Grand Bahama"],
+    towns: ["Marsh Harbour Abaco", "Cherokee Sound Abaco", "Andros Town", "Cargill Creek Andros", "Governors Harbour Eleuthera", "Rock Sound Eleuthera", "George Town Exuma", "Deadmans Cay Long Island", "McLeans Town Grand Bahama", "Hope Town Abaco", "Man-O-War Cay Abaco", "Treasure Cay Abaco", "Green Turtle Cay Abaco", "Sandy Point Abaco", "Spanish Wells Eleuthera", "Harbour Island Eleuthera", "Gregory Town Eleuthera", "Tarpum Bay Eleuthera", "Nassau New Providence", "Staniel Cay Exuma", "Black Point Exuma", "Barreterre Exuma", "Clarence Town Long Island", "Salt Pond Long Island", "Freeport Grand Bahama", "West End Grand Bahama", "High Rock Grand Bahama", "Fresh Creek Andros", "Nicholls Town Andros", "Mangrove Cay Andros", "Congo Town Andros"],
     regs: [
       { n: "Bahamas flats fishing regulations (license required, bones are C&R)", u: "https://www.bahamas.com/plan-your-trip/fishing-regulations" }
     ],

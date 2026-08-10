@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="data/spots.js?v=22"></script>
+<script src="data/spots.js?v=24"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
   #root { overflow-x: clip; }
@@ -56,6 +56,7 @@ const F = { disp: "'Barlow Condensed', sans-serif", body: "'Barlow', sans-serif"
 
 /* ---------- data handles ---------- */
 const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDORS, SPOTS = window.FG_SPOTS, KB = window.FG_KB, FBX = window.FG_FLYBOX || {};
+const RIVERS = CORR.flatMap((c) => (c.rivers || []));
 const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 const GRADES = ["SKUNKED", "SLOW", "DECENT", "LIGHTS OUT"];
 const wrapText = (x, text, tx, ty, maxW, lh) => {
@@ -153,6 +154,41 @@ const moonFactor = (sp, date) => {
   const m = date.getMonth(); if (m < 3 || m > 6) return 1;
   const p = moonPhase(date); const nearMoon = p < 0.07 || p > 0.93 || Math.abs(p - 0.5) < 0.07;
   return nearMoon ? 1.12 : 1;
+};
+const ST_ABBR = { maine: "ME", "new hampshire": "NH", massachusetts: "MA", "rhode island": "RI", connecticut: "CT", "new york": "NY", "new jersey": "NJ", "north carolina": "NC", florida: "FL", vermont: "VT", delaware: "DE", maryland: "MD", virginia: "VA", "south carolina": "SC", georgia: "GA", pennsylvania: "PA" };
+const ST_FULL = { ME: "maine", NH: "new hampshire", MA: "massachusetts", RI: "rhode island", CT: "connecticut", NY: "new york", NJ: "new jersey", NC: "north carolina", FL: "florida", VT: "vermont", DE: "delaware", MD: "maryland", VA: "virginia", SC: "south carolina", GA: "georgia", PA: "pennsylvania" };
+const parsePlace = (raw) => {
+  const parts = raw.trim().replace(/\s+/g, " ").split(",");
+  let name = parts[0].trim(), st = null;
+  const rest = parts.slice(1).join(" ").replace(/[^a-zA-Z ]/g, "").trim().toLowerCase();
+  const m2 = name.match(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME|VT|DE|MD|VA|SC|GA|PA)$/i);
+  if (m2) { st = m2[1].toUpperCase(); name = name.slice(0, m2.index).trim(); }
+  if (!st) { for (const k in ST_ABBR) { if (name.toLowerCase().endsWith(" " + k)) { st = ST_ABBR[k]; name = name.slice(0, name.length - k.length - 1).trim(); break; } } }
+  if (!st && rest) { if (ST_ABBR[rest]) st = ST_ABBR[rest]; else if (ST_FULL[rest.toUpperCase()]) st = rest.toUpperCase(); }
+  return { name, st };
+};
+const riverMatches = (name, st) => {
+  const rq = name.toLowerCase();
+  if (rq.length < 3) return [];
+  return RIVERS.filter((r) => {
+    if (st && r.st !== st) return false;
+    const k = r.n.toLowerCase();
+    return k.startsWith(rq) || (rq.length >= 4 && k.includes(rq)) || (k + " " + r.st.toLowerCase()).startsWith(rq);
+  }).map((r) => ({ name: r.n, admin1: r.st, la: r.la, lo: r.lo, mi: nearestSpots(r.la, r.lo, 1)[0].mi }));
+};
+const geoQuery = async (raw, count) => {
+  const { name, st } = parsePlace(raw);
+  if (!name) return [];
+  const rivers = riverMatches(name, st);
+  let towns = [];
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=${count || 10}&language=en&format=json`);
+    const j = await r.json();
+    let res = (j.results || []).filter((g) => g.country_code === "US" || g.country_code === "BS");
+    if (st) { const want = ST_FULL[st]; const hit = res.filter((g) => (g.admin1 || "").toLowerCase() === want); if (hit.length) res = hit; }
+    towns = res.map((g) => ({ name: g.name, admin1: g.admin1 || g.country || "", la: g.latitude, lo: g.longitude, mi: nearestSpots(g.latitude, g.longitude, 1)[0].mi }));
+  } catch (e) {}
+  return [...rivers, ...towns].sort((a, b) => a.mi - b.mi);
 };
 const clarityFor = (ctx) => { const w = ctx.windByHour[12] != null ? ctx.windByHour[12] : ctx.windClimo; return w > 14 ? "stained" : "clear"; };
 const blockOfHour = (h) => h < 9 ? "dawn" : h < 16 ? "day" : h < 20 ? "dusk" : "night";
@@ -415,12 +451,8 @@ function App() {
           return;
         }
         if (/^\d/.test(qq)) { setGeoSugs([]); return; }
-        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(qq)}&count=8&language=en&format=json`);
-        const j = await r.json(); if (!alive) return;
-        const res = (j.results || []).filter((g) => g.country_code === "US" || g.country_code === "BS")
-          .map((g) => ({ t: "geo", label: `${g.name}, ${g.admin1 || g.country || ""}`, sub: "place", la: g.latitude, lo: g.longitude, mi: nearestSpots(g.latitude, g.longitude, 1)[0].mi }))
-          .sort((a, b) => a.mi - b.mi).slice(0, 5);
-        setGeoSugs(res);
+        const list = await geoQuery(qq, 10); if (!alive) return;
+        setGeoSugs(list.slice(0, 5).map((g) => ({ t: "geo", label: `${g.name}, ${g.admin1}`, sub: Math.round(g.mi) + " mi to water", la: g.la, lo: g.lo, mi: g.mi })));
       } catch (e) { if (alive) setGeoSugs([]); }
     }, 300);
     return () => { alive = false; clearTimeout(t); };
@@ -530,7 +562,7 @@ function App() {
       length_in: len, fly: logForm.fly.trim() || null,
       score: dm ? dm.peak : null,
       tide: tsNow ? (tsNow.rising ? "flood" : "ebb") + (tsNow.rate < 0.35 ? " near slack" : "") : "no feed",
-      wind: Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + " mph" + (ctxToday.gustByHour[12] != null ? " g" + Math.round(ctxToday.gustByHour[12]) : ""),
+      wind: Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + " mph",
       temp: (ctxToday.sst + sstOffFor(spot, date)) + "F",
       moon: moonName(moonP), mode };
     setLogMsg("Logged. Snapshot saved with it.");
@@ -599,20 +631,19 @@ function App() {
   useEffect(() => {
     if (wx[cid]) return;
     let alive = true;
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${cor.lat}&longitude=${cor.lng}&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover&daily=sunrise,sunset&wind_speed_unit=mph&timezone=auto&forecast_days=16`)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${cor.lat}&longitude=${cor.lng}&hourly=wind_speed_10m,wind_direction_10m,cloud_cover&daily=sunrise,sunset&wind_speed_unit=mph&timezone=auto&forecast_days=16`)
       .then((r) => r.json())
       .then((j) => {
         if (!alive || !j.hourly) return;
-        const windByDate = {}, gustByDate = {}, dirByDate = {}, cloudByDate = {}, sun = {};
+        const windByDate = {}, dirByDate = {}, cloudByDate = {}, sun = {};
         j.hourly.time.forEach((t, i) => {
           const d = t.slice(0, 10), h = parseInt(t.slice(11, 13));
           (windByDate[d] = windByDate[d] || {})[h] = j.hourly.wind_speed_10m[i];
-          if (j.hourly.wind_gusts_10m) (gustByDate[d] = gustByDate[d] || {})[h] = j.hourly.wind_gusts_10m[i];
           (dirByDate[d] = dirByDate[d] || {})[h] = j.hourly.wind_direction_10m[i];
           (cloudByDate[d] = cloudByDate[d] || {})[h] = j.hourly.cloud_cover[i];
         });
         j.daily.time.forEach((t, i) => { sun[t] = { rise: new Date(j.daily.sunrise[i]), set: new Date(j.daily.sunset[i]) }; });
-        setWx((p) => ({ ...p, [cid]: { windByDate, gustByDate, dirByDate, cloudByDate, sun } }));
+        setWx((p) => ({ ...p, [cid]: { windByDate, dirByDate, cloudByDate, sun } }));
       }).catch(() => {});
     return () => { alive = false; };
   }, [cid]);
@@ -644,7 +675,6 @@ function App() {
     return {
       events: shifted || null,
       windByHour: (W.windByDate && W.windByDate[key]) || {},
-      gustByHour: (W.gustByDate && W.gustByDate[key]) || {},
       dirByHour: (W.dirByDate && W.dirByDate[key]) || {},
       cloudByHour: (W.cloudByDate && W.cloudByDate[key]) || {},
       windClimo: lerpArr(sc.windClimo, dd),
@@ -767,7 +797,7 @@ function App() {
       if (whenToday.length) lines.push("WHEN: " + whenToday.map((w) => clock(w.s).toUpperCase() + " TO " + clock(w.e).toUpperCase()).join(", "));
       const nx = (ctxToday.events || []).filter((e) => e.date > now).slice(0, 1).map((e) => (e.hl === "H" ? "HIGH " : "LOW ") + clock(e.date).toUpperCase())[0];
       if (nx) lines.push("NEXT TIDE: " + nx);
-      lines.push("WIND " + Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + (ctxToday.gustByHour[12] != null ? " G" + Math.round(ctxToday.gustByHour[12]) : "") + " MPH · WATER ~" + (ctxToday.sst + sstOffFor(spot, date)) + "F · " + moonName(moonP).toUpperCase());
+      lines.push("WIND " + Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + " MPH · WATER ~" + (ctxToday.sst + sstOffFor(spot, date)) + "F · " + moonName(moonP).toUpperCase());
       lines.forEach((L) => { x.fillText(L, 72, y); y += 50; });
       x.fillStyle = "#5A6468"; x.font = "25px Menlo, monospace"; x.fillText("THE GUIDE'S CALL, EVERY DAY · MYFLYGUIDE.GITHUB.IO", 72, 1002);
       const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
@@ -804,7 +834,7 @@ function App() {
   const moonP = moonPhase(date);
   const dayOff = Math.round((date - today) / 86400000);
   const conf = confidence(dayOff, spot);
-  const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph${ctxToday.gustByHour[12] != null ? " gusting " + Math.round(ctxToday.gustByHour[12]) : ""}, ${moonEmoji(moonP)} ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
+  const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonEmoji(moonP)} ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
 
   const whenToday = useMemo(() => {
     if (!dm || !dm.windows.length) return [];
@@ -873,12 +903,8 @@ function App() {
         if (r.ok) { const j = await r.json(); const p = j.places && j.places[0]; if (p) applyNear(`${p["place name"]}, ${p["state abbreviation"]}`, parseFloat(p.latitude), parseFloat(p.longitude)); }
         return;
       }
-      const name = raw.split(",")[0].replace(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME)$/i, "");
-      const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
-      const j = await r.json();
-      const g = (j.results || []).filter((x) => x.country_code === "US" || x.country_code === "BS")
-        .map((x) => ({ x, mi: nearestSpots(x.latitude, x.longitude, 1)[0].mi })).sort((a, b) => a.mi - b.mi)[0];
-      if (g) applyNear(`${g.x.name}, ${g.x.admin1 || g.x.country || ""}`, g.x.latitude, g.x.longitude);
+      const g = (await geoQuery(raw, 10))[0];
+      if (g) applyNear(`${g.name}, ${g.admin1}`, g.la, g.lo);
     } catch (e) {}
   };
 
@@ -891,12 +917,8 @@ function App() {
       const j = await r.json(); const p = j.places && j.places[0];
       return p ? { label: `${p["place name"]}, ${p["state abbreviation"]}`, la: parseFloat(p.latitude), lo: parseFloat(p.longitude) } : null;
     }
-    const name = t.split(",")[0].replace(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME)$/i, "");
-    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
-    const j = await r.json();
-    const g = (j.results || []).filter((x) => x.country_code === "US" || x.country_code === "BS")
-      .map((x) => ({ x, mi: nearestSpots(x.latitude, x.longitude, 1)[0].mi })).sort((a, b) => a.mi - b.mi)[0];
-    return g ? { label: `${g.x.name}, ${g.x.admin1 || g.x.country || ""}`, la: g.x.latitude, lo: g.x.longitude } : null;
+    const g = (await geoQuery(t, 10))[0];
+    return g ? { label: `${g.name}, ${g.admin1}`, la: g.la, lo: g.lo } : null;
   };
   const [plan, setPlan] = useState({ place: "", start: iso(today), nights: 3, sp: "any" });
   const [planBusy, setPlanBusy] = useState(false);
@@ -912,18 +934,16 @@ function App() {
     const q2 = t.toLowerCase();
     const local = [];
     CORR.forEach((c) => (c.towns || []).forEach((tn) => { const k = tn.toLowerCase(); if (k.startsWith(q2) || (q2.length >= 3 && k.includes(q2))) local.push({ label: tn, sub: c.short }); }));
+    riverMatches(q2, null).forEach((r) => local.push({ label: r.name + ", " + r.admin1, sub: "river · " + Math.round(r.mi) + " mi to water", la: r.la, lo: r.lo }));
     setPlanSugs(local.slice(0, 5));
     if (t.length < 3) return;
     let alive = true;
     const timer = setTimeout(async () => {
       try {
-        const name = t.split(",")[0].replace(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME)$/i, "");
-        const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
-        const j = await r.json();
+        const list = await geoQuery(t, 10);
         if (!alive) return;
         const seen = new Set(local.map((x) => x.label.toLowerCase().split(" ")[0].replace(",", "")));
-        const geo = (j.results || []).filter((x) => x.country_code === "US" || x.country_code === "BS")
-          .map((x) => ({ label: `${x.name}, ${x.admin1 || x.country || ""}`, sub: Math.round(nearestSpots(x.latitude, x.longitude, 1)[0].mi) + " mi to water", la: x.latitude, lo: x.longitude }))
+        const geo = list.map((x) => ({ label: `${x.name}, ${x.admin1}`, sub: Math.round(x.mi) + " mi to water", la: x.la, lo: x.lo }))
           .filter((x) => !seen.has(x.label.toLowerCase().split(" ")[0].replace(",", "")));
         setPlanSugs([...local, ...geo].slice(0, 6));
       } catch (e) {}
@@ -1334,15 +1354,17 @@ function App() {
               </div>
             </div>
             <div style={{ marginTop: 12, fontSize: 14.5, color: C.stone, lineHeight: 1.5 }}>{whyLine(spot, sp, date, dm.best)}</div>
-            <div style={{ marginTop: 10, border: `1px solid ${whenToday.length ? C.blaze + "55" : C.line}`, background: whenToday.length ? C.blazeSoft : C.tile, borderRadius: 10, padding: "9px 12px" }}>
-              <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: 1.2, color: whenToday.length ? C.blaze : C.dim, marginBottom: 3 }}>BEST BITE WINDOW{whenToday.length > 1 || (dm && dm.windows.length > 1) ? "S" : ""} · {iso(date) === iso(today) ? "TODAY" : DOW[date.getDay()].toUpperCase() + " " + (date.getMonth() + 1) + "/" + date.getDate()}</div>
-              {whenToday.length > 0 && whenToday.map((w, i) => (
-                <div key={i} style={{ fontSize: 14.5, color: C.bone, lineHeight: 1.55 }}>{clock(w.s)} to {clock(w.e)}, {w.why}</div>
-              ))}
-              {whenToday.length === 0 && (
-                <div style={{ fontSize: 13.5, color: C.stone, lineHeight: 1.55 }}>{!ctxToday.events && ctxToday.sun ? `No tide feed on this water, fish first and last light: ${clock(ctxToday.sun.rise)} and ${clock(ctxToday.sun.set)}.` : ctxToday.sun ? `No hour clears the bar, it's a grind tide. If you go anyway: first light ${clock(ctxToday.sun.rise)} or last light ${clock(ctxToday.sun.set)}.` : "No hour clears the bar, it's a grind tide."}</div>
-              )}
-            </div>
+            {whenToday.length > 0 && (
+              <div style={{ marginTop: 10, border: `1px solid ${C.blaze}55`, background: C.blazeSoft, borderRadius: 10, padding: "9px 12px" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: 1.2, color: C.blaze, marginBottom: 3 }}>WHEN {iso(date) === iso(today) ? "TODAY" : DOW[date.getDay()].toUpperCase() + " " + (date.getMonth() + 1) + "/" + date.getDate()}</div>
+                {whenToday.map((w, i) => (
+                  <div key={i} style={{ fontSize: 14.5, color: C.bone, lineHeight: 1.55 }}>{clock(w.s)} to {clock(w.e)}, {w.why}</div>
+                ))}
+              </div>
+            )}
+            {whenToday.length === 0 && !ctxToday.events && ctxToday.sun && (
+              <div style={{ marginTop: 10, fontFamily: F.mono, fontSize: 12, color: C.dim }}>No tide feed on this water, fish first and last light: {clock(ctxToday.sun.rise)} and {clock(ctxToday.sun.set)}.</div>
+            )}
             <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
               <a href={gmapsDir(spot.lat, spot.lng)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 12.5, color: C.ink, background: C.stone, borderRadius: 8, padding: "7px 12px", textDecoration: "none", fontWeight: 600 }}>DIRECTIONS</a>
               <button onClick={shareSpot} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: copied ? C.ok : C.dim, border: `1px solid ${copied ? C.ok : C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{copied ? "COPIED" : "SHARE"}</button>
@@ -1409,12 +1431,11 @@ function App() {
               const r = scoreAt(spot, sp, rt, c2);
               const ts2 = ctxToday.events ? tideStateAt(ctxToday.events, rt) : null;
               const wnd = Math.round(ctxToday.windByHour[rt.getHours()] != null ? ctxToday.windByHour[rt.getHours()] : ctxToday.windClimo);
-              const gst = ctxToday.gustByHour[rt.getHours()] != null ? Math.round(ctxToday.gustByHour[rt.getHours()]) : null;
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "2px 0 10px", flexWrap: "wrap" }}>
                   <div style={{ fontFamily: F.mono, fontSize: 11, color: scrubT ? C.ink : C.dim, background: scrubT ? C.blaze : "transparent", border: `1px solid ${scrubT ? C.blaze : C.line}`, borderRadius: 7, padding: "4px 8px", fontWeight: scrubT ? 700 : 400 }}>{scrubT ? "AT " + clock(rt).toUpperCase() : (iso(date) === iso(today) ? "NOW " : "PEAK ") + clock(rt).toUpperCase()}</div>
                   <div style={{ fontFamily: F.mono, fontSize: 11.5, color: C.stone }}>
-                    {ts2 ? ts2.h.toFixed(1) + "ft " + (ts2.rising ? "flooding" : "ebbing") : "no tide feed"} · wind {wnd}{gst != null ? " g" + gst : ""} mph · call <span style={{ color: r.score >= 70 ? C.blaze : r.score >= 50 ? C.bone : C.dim, fontWeight: 700 }}>{to10(r.score)}/10</span>
+                    {ts2 ? ts2.h.toFixed(1) + "ft " + (ts2.rising ? "flooding" : "ebbing") : "no tide feed"} · wind {wnd} mph · call <span style={{ color: r.score >= 70 ? C.blaze : r.score >= 50 ? C.bone : C.dim, fontWeight: 700 }}>{to10(r.score)}/10</span>
                   </div>
                   {!scrubT && <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, marginLeft: "auto" }}>SLIDE THE CHART</div>}
                 </div>
@@ -1439,7 +1460,7 @@ function App() {
               </div>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
                 <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>WIND</div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph midday{(() => { const hrs = Object.keys(ctxToday.gustByHour || {}); if (!hrs.length) return null; const gmax = Math.round(Math.max(...hrs.map((h) => ctxToday.gustByHour[h]))); return <span style={{ color: gmax >= 25 ? C.blaze : C.dim, fontWeight: 400 }}> · gusts to {gmax}</span>; })()}</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph midday</div>
               </div>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
                 <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>MOON</div>
