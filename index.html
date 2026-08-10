@@ -17,6 +17,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="data/spots.js"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
@@ -55,6 +56,7 @@ const F = { disp: "'Barlow Condensed', sans-serif", body: "'Barlow', sans-serif"
 
 /* ---------- data handles ---------- */
 const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDORS, SPOTS = window.FG_SPOTS, KB = window.FG_KB, FBX = window.FG_FLYBOX || {};
+const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 const corrById = (id) => CORR.find((c) => c.id === id) || CORR[0];
 const MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MNF = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -437,6 +439,74 @@ function App() {
     return () => clearTimeout(t);
   }, [scrollTick]);
 
+  /* account + favorites (only alive when Supabase config is filled in data/spots.js) */
+  const [user, setUser] = useState(null);
+  const [favs, setFavs] = useState([]);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authMsg, setAuthMsg] = useState("");
+  const [profOpen, setProfOpen] = useState(false);
+  useEffect(() => {
+    if (!SB) return;
+    SB.auth.getSession().then(({ data }) => setUser(data && data.session ? data.session.user : null)).catch(() => {});
+    const { data: sub } = SB.auth.onAuthStateChange((ev, session) => { setUser(session ? session.user : null); if (session) { setAuthOpen(false); setAuthMsg(""); } });
+    return () => { try { sub.subscription.unsubscribe(); } catch (e) {} };
+  }, []);
+  useEffect(() => {
+    if (!SB || !user) { setFavs([]); return; }
+    let alive = true;
+    SB.from("favorites").select("*").order("created_at").then(({ data }) => { if (alive) setFavs(data || []); }).catch(() => {});
+    return () => { alive = false; };
+  }, [user ? user.id : null]);
+  const favPlaces = favs.filter((f) => f.kind === "place");
+  const favSpotIds = favs.filter((f) => f.kind === "spot").map((f) => f.spot_id);
+  const isFavSpot = (id) => favSpotIds.includes(id);
+  const toggleFavSpot = async (s) => {
+    if (!SB) return;
+    if (!user) { setAuthMsg(""); setAuthOpen(true); return; }
+    const ex = favs.find((f) => f.kind === "spot" && f.spot_id === s.id);
+    if (ex) { setFavs(favs.filter((f) => f !== ex)); try { await SB.from("favorites").delete().eq("id", ex.id); } catch (e) {} return; }
+    const tmp = { id: "tmp-" + s.id, user_id: user.id, kind: "spot", spot_id: s.id, label: s.name };
+    setFavs([...favs, tmp]);
+    try { const { data } = await SB.from("favorites").insert({ user_id: user.id, kind: "spot", spot_id: s.id, label: s.name }).select().single(); if (data) setFavs((p) => p.map((f) => (f.id === tmp.id ? data : f))); } catch (e) {}
+  };
+  const placeSaved = nearby ? favPlaces.some((f) => f.label === nearby.label) : false;
+  const saveFavPlace = async () => {
+    if (!SB || !nearby || nearby.la == null) return;
+    if (!user) { setAuthMsg(""); setAuthOpen(true); return; }
+    if (placeSaved) { const ex = favPlaces.find((f) => f.label === nearby.label); setFavs(favs.filter((f) => f !== ex)); try { await SB.from("favorites").delete().eq("id", ex.id); } catch (e) {} return; }
+    const tmp = { id: "tmp-p-" + nearby.label, user_id: user.id, kind: "place", label: nearby.label, lat: nearby.la, lng: nearby.lo };
+    setFavs([...favs, tmp]);
+    try { const { data } = await SB.from("favorites").insert({ user_id: user.id, kind: "place", label: nearby.label, lat: nearby.la, lng: nearby.lo }).select().single(); if (data) setFavs((p) => p.map((f) => (f.id === tmp.id ? data : f))); } catch (e) {}
+  };
+  const signInGoogle = async () => { try { await SB.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } }); } catch (e) { setAuthMsg("Could not reach the sign in service. Check your connection and try again."); } };
+  const sendMagicLink = async () => {
+    const em = authEmail.trim();
+    if (!/.+@.+\..+/.test(em)) { setAuthMsg("That email doesn't look right."); return; }
+    try { const { error } = await SB.auth.signInWithOtp({ email: em, options: { emailRedirectTo: location.origin + location.pathname } }); setAuthMsg(error ? error.message : "Link sent. Open your email on this device and tap it."); } catch (e) { setAuthMsg("Could not send the link. Try again in a minute."); }
+  };
+  const signOut = async () => { setProfOpen(false); try { await SB.auth.signOut(); } catch (e) {} };
+
+  /* home map instance + locate */
+  const homeMapObj = useRef(null);
+  const youMarker = useRef(null);
+  const zoomMapToMe = () => {
+    if (!navigator.geolocation) { setGeoMsg("Location not available in this browser. Type your town instead."); return; }
+    setGeoMsg("Finding you...");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoMsg("");
+        const m = homeMapObj.current; if (!m || !window.L) return;
+        const la = pos.coords.latitude, lo = pos.coords.longitude;
+        if (youMarker.current) { try { m.removeLayer(youMarker.current); } catch (e) {} }
+        youMarker.current = window.L.circleMarker([la, lo], { radius: 8, color: "#EAE5D8", weight: 2, fillColor: "#E8722A", fillOpacity: 1 }).addTo(m).bindTooltip("You are here", { direction: "top", offset: [0, -8] });
+        m.setView([la, lo], 9);
+      },
+      () => setGeoMsg("Location blocked. Type your town instead, works just as well."),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  };
+
   const spots = useMemo(() => SPOTS.filter((s) => s.c === cid && (s.sp[sp] || 0) > 0), [cid, sp]);
   const spot = spots.find((s) => s.id === spotId) || spots[0] || SPOTS[0];
 
@@ -531,7 +601,7 @@ function App() {
   const dm = dayModels.find((d) => d.spot.id === spot.id) || ranking[0] || null;
   const dmById = (id) => dayModels.find((d) => d.spot.id === id);
   const [view, setView] = useState(hash.spot ? "spot" : "home");
-  useEffect(() => { if (view === "spot") history.replaceState(null, "", `#spot=${spot.id}&c=${cid}&sp=${sp}`); else history.replaceState(null, "", location.pathname + location.search); }, [spot.id, cid, sp, view]);
+  useEffect(() => { if (/access_token|refresh_token|error_description|token_type/.test(location.hash)) return; if (view === "spot") history.replaceState(null, "", `#spot=${spot.id}&c=${cid}&sp=${sp}`); else history.replaceState(null, "", location.pathname + location.search); }, [spot.id, cid, sp, view]);
   const homeSpBest = useMemo(() => {
     const out = {};
     Object.keys(SPX).forEach((k) => {
@@ -541,6 +611,10 @@ function App() {
     });
     return out;
   }, [tides, wx, sst, mode]);
+  const yourWater = useMemo(() => favSpotIds
+    .map((id) => SPOTS.find((s) => s.id === id)).filter(Boolean)
+    .map((s) => { const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0]; const d = computeDay(s, k, today, ctxFor(today, s)); return { s, k, peak: d.peak }; })
+    .sort((a, b) => b.peak - a.peak), [favs, tides, wx, sst, mode]);
   const homePins = useMemo(() => SPOTS.map((s) => {
     const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
     const d = computeDay(s, k, today, ctxFor(today, s));
@@ -581,6 +655,7 @@ function App() {
     if (view !== "home" || !window.L || !mapRef.current) return;
     const L = window.L;
     const m = L.map(mapRef.current, { zoomControl: false, dragging: !L.Browser.mobile, touchZoom: true, attributionControl: true });
+    homeMapObj.current = m;
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { attribution: "© OpenStreetMap © CARTO", maxZoom: 18 }).addTo(m);
     const b = [];
     homePins.forEach((p) => {
@@ -591,7 +666,7 @@ function App() {
       b.push([p.lat, p.lng]);
     });
     if (b.length) m.fitBounds(b, { padding: [26, 26] });
-    return () => { m.remove(); };
+    return () => { homeMapObj.current = null; youMarker.current = null; m.remove(); };
   }, [view, homePins]);
   const [geoMsg, setGeoMsg] = useState("");
   const locateMe = () => {
@@ -666,7 +741,7 @@ function App() {
     const sorted = nearestSpots(la, lo, SPOTS.length);
     const close = sorted.filter((x) => x.mi <= 30);
     const items = close.length >= 4 ? close.slice(0, 10) : sorted.slice(0, 6);
-    setNearby({ label: lbl, items });
+    setNearby({ label: lbl, la, lo, items });
     items.forEach(({ s }) => fetchStation(s.station));
     if (items.length) {
       const scored = items.map((it) => { const k = (it.s.sp[sp] || 0) > 0 ? sp : Object.keys(it.s.sp).find((x) => it.s.sp[x] > 0); return { it, peak: k ? computeDay(it.s, k, today, ctxFor(today, it.s)).peak : 0 }; });
@@ -816,7 +891,29 @@ function App() {
         {/* header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <img src="logo.png" alt="FlyGuide" onClick={() => { location.hash = ""; location.reload(); }} title="Reset" style={{ height: "clamp(46px, 13vw, 58px)", width: "auto", display: "block", cursor: "pointer", userSelect: "none" }} />
-          <button onClick={() => { location.hash = ""; location.reload(); }} style={{ background: "none", border: `1px solid ${C.line}`, color: C.dim, borderRadius: 8, padding: "6px 11px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer" }}>RESET</button>
+          {SB && (
+            <div style={{ position: "relative" }}>
+              {!user && (
+                <button onClick={() => { setAuthMsg(""); setAuthOpen(true); }} style={{ background: "none", border: `1px solid ${C.line}`, color: C.stone, borderRadius: 8, padding: "8px 12px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer" }}>SIGN IN</button>
+              )}
+              {user && (
+                <button onClick={() => setProfOpen(!profOpen)} title="Your profile" style={{ width: 40, height: 40, borderRadius: 20, border: `1px solid ${profOpen ? C.blaze : C.moss}`, background: C.panel2, color: C.bone, fontFamily: F.disp, fontWeight: 700, fontSize: 17, cursor: "pointer", overflow: "hidden", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {user.user_metadata && user.user_metadata.avatar_url
+                    ? <img src={user.user_metadata.avatar_url} alt="Profile" referrerPolicy="no-referrer" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    : (((user.user_metadata && user.user_metadata.full_name) || user.email || "?").trim()[0] || "?").toUpperCase()}
+                </button>
+              )}
+              {user && profOpen && (
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 70, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, padding: 14, width: 240, boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{(user.user_metadata && user.user_metadata.full_name) || "Angler"}</div>
+                  <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 2, overflowWrap: "anywhere" }}>{user.email}</div>
+                  <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.moss, marginTop: 10, letterSpacing: 0.5 }}>SAVED: {favSpotIds.length} SPOT{favSpotIds.length === 1 ? "" : "S"} · {favPlaces.length} PLACE{favPlaces.length === 1 ? "" : "S"}</div>
+                  <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6, lineHeight: 1.45 }}>Your favorites lead the home screen. Save spots with the star on any call, save places from the search card.</div>
+                  <button onClick={signOut} style={{ marginTop: 12, width: "100%", background: "none", border: `1px solid ${C.line}`, color: C.stone, borderRadius: 8, padding: "9px 10px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer" }}>SIGN OUT</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 1, marginTop: 5 }}>THE GUIDE'S CALL · 30 DAYS OUT</div>
         <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, margin: "4px 0 14px", opacity: 0.8 }}>Board recomputed {clock(now)} · live data refreshes every visit</div>
@@ -825,6 +922,27 @@ function App() {
           <div>
             <div style={{ margin: "24px 0 8px", ...h, fontSize: "clamp(32px, 10vw, 46px)", lineHeight: 1.04 }}>WHERE ARE YOU FISHING?</div>
             <div style={{ color: C.stone, fontSize: 15, lineHeight: 1.55, marginBottom: 14 }}>Live scores, real tides, and a 30-day outlook for {SPOTS.length} fly spots from Maine to the Bahamas. Type a town, pick your fish, or tap a pin.</div>
+            {user && (yourWater.length > 0 || favPlaces.length > 0) && (
+              <div style={{ background: C.panel, border: `1px solid ${C.blaze}44`, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
+                <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.blaze, textTransform: "uppercase", marginBottom: 8 }}>Your water · today's call on your favorites</div>
+                {favPlaces.length > 0 && (
+                  <div className="noscroll" style={{ display: "flex", gap: 7, overflowX: "auto", marginBottom: yourWater.length ? 10 : 0, paddingBottom: 2 }}>
+                    {favPlaces.map((f) => (
+                      <button key={f.id} onClick={() => applyNear(f.label, f.lat, f.lng)} style={{ whiteSpace: "nowrap", flexShrink: 0, background: C.panel2, border: `1px solid ${C.line}`, color: C.stone, borderRadius: 16, padding: "7px 11px", fontSize: 12, cursor: "pointer", fontFamily: F.mono }}>{"\u25CE"} {f.label}</button>
+                    ))}
+                  </div>
+                )}
+                {yourWater.map(({ s, k, peak }) => (
+                  <button key={s.id} onClick={() => jumpToSpot(s)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{"\u2605"} {s.name}</div>
+                      <div style={{ color: C.dim, fontSize: 12 }}>{s.area} · {SPX[k].short}</div>
+                    </div>
+                    <div style={{ ...h, fontSize: 21, lineHeight: 1, color: peak >= 70 ? C.blaze : peak >= 50 ? C.stone : C.dim }}>{to10(peak)}<span style={{ fontSize: 11, color: C.dim }}>/10</span></div>
+                  </button>
+                ))}
+              </div>
+            )}
             {searchUI}
             <button onClick={locateMe} style={{ width: "100%", background: C.blaze, color: C.ink, border: "none", borderRadius: 12, padding: "13px 14px", fontFamily: F.disp, fontWeight: 700, fontSize: 17, letterSpacing: 0.5, cursor: "pointer", marginBottom: 8 }}>USE MY LOCATION</button>
             {geoMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.dim, marginBottom: 8 }}>{geoMsg}</div>}
@@ -842,7 +960,11 @@ function App() {
             </select>
             <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
               <div style={{ padding: "11px 14px 9px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase" }}>The water · today's scores · tap a pin</div>
-              <div ref={mapRef} style={{ height: 300, width: "100%" }} />
+              <div style={{ position: "relative" }}>
+                <div ref={mapRef} style={{ height: 300, width: "100%" }} />
+                <button onClick={zoomMapToMe} title="Zoom to my location" aria-label="Zoom to my location"
+                  style={{ position: "absolute", right: 12, bottom: 12, zIndex: 1000, width: 44, height: 44, borderRadius: 22, background: C.panel2, border: `1px solid ${C.line}`, color: C.bone, fontSize: 19, cursor: "pointer", boxShadow: "0 6px 18px rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>{"\uD83D\uDCCD"}</button>
+              </div>
             </div>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 16 }}>
               {["LIVE NOAA TIDES", "30-DAY CONFIDENCE BOARD", "RANKED FLY BOX", "ASK THE GUIDE"].map((t2) => (
@@ -860,7 +982,10 @@ function App() {
           <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 }}>Spots near {nearby.label}</div>
-              <button onClick={() => setNearby(null)} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", fontFamily: F.mono, fontSize: 10.5 }}>CLEAR</button>
+              <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+                {SB && nearby.la != null && <button onClick={saveFavPlace} style={{ background: "none", border: "none", color: placeSaved ? C.blaze : C.dim, cursor: "pointer", fontFamily: F.mono, fontSize: 10.5 }}>{placeSaved ? "\u2605 SAVED" : "\u2606 SAVE"}</button>}
+                <button onClick={() => setNearby(null)} style={{ background: "none", border: "none", color: C.dim, cursor: "pointer", fontFamily: F.mono, fontSize: 10.5 }}>CLEAR</button>
+              </div>
             </div>
             {nearby.items.map(({ s, mi }) => {
               const n = nearbyModels[s.id];
@@ -927,6 +1052,7 @@ function App() {
               )}
               <a href={gmapsDir(spot.lat, spot.lng)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 12.5, color: C.ink, background: C.stone, borderRadius: 8, padding: "7px 12px", textDecoration: "none", fontWeight: 600 }}>DIRECTIONS</a>
               <button onClick={shareSpot} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: copied ? C.ok : C.dim, border: `1px solid ${copied ? C.ok : C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{copied ? "COPIED" : "SHARE"}</button>
+              {SB && <button onClick={() => toggleFavSpot(spot)} style={{ fontFamily: F.mono, fontSize: 12, background: isFavSpot(spot.id) ? C.blazeSoft : "none", color: isFavSpot(spot.id) ? C.blaze : C.dim, border: `1px solid ${isFavSpot(spot.id) ? C.blaze : C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{isFavSpot(spot.id) ? "\u2605 SAVED" : "\u2606 SAVE"}</button>}
               {manual && <button onClick={() => setManual(false)} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>BACK TO BEST</button>}
             </div>
           </div>
@@ -1091,13 +1217,12 @@ function App() {
 
           <div style={{ ...card, background: "transparent", padding: 0 }}>
             <button onClick={() => setShowLib(!showLib)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", color: C.dim, padding: 16, cursor: "pointer" }}>
-              <span style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, textTransform: "uppercase" }}>The library & the law</span>
+              <span style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, textTransform: "uppercase" }}>The law</span>
               <span style={{ fontFamily: F.mono, fontSize: 12 }}>{showLib ? "HIDE" : "SHOW"}</span>
             </button>
             {showLib && (
             <div style={{ fontSize: 13, color: C.dim, lineHeight: 1.6, padding: "0 16px 16px" }}>
-              Knowledge distilled from the canon: {KB.canon.slice(0, 5).join("; ")}, and a thousand hours of dock talk.
-              <br /><br />Regs change yearly, check before you fish: {cor.regs.map((r, i) => <span key={i}><a href={r.u} target="_blank" rel="noopener" style={{ color: C.moss }}>{r.n}</a>{i < cor.regs.length - 1 ? " · " : ""}</span>)}
+              Regs change yearly, check before you fish: {cor.regs.map((r, i) => <span key={i}><a href={r.u} target="_blank" rel="noopener" style={{ color: C.moss }}>{r.n}</a>{i < cor.regs.length - 1 ? " · " : ""}</span>)}
               <br /><br />{cor.accessLaw}
               <br /><br /><span style={{ fontFamily: F.mono, fontSize: 10.5 }}>Scores are a planning aid, not a promise. Tides: NOAA. Weather: Open-Meteo. Not for navigation.</span>
             </div>
@@ -1106,6 +1231,33 @@ function App() {
         </div>
         </React.Fragment>)}
       </div>
+
+      {/* reset, bottom right */}
+      <button onClick={() => { location.hash = ""; location.reload(); }} title="Reset"
+        style={{ position: "fixed", right: 16, bottom: view === "spot" ? 78 : 16, zIndex: 54, background: C.panel, border: `1px solid ${C.line}`, color: C.dim, borderRadius: 8, padding: "8px 12px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer", boxShadow: "0 6px 18px rgba(0,0,0,.4)" }}>RESET</button>
+
+      {/* sign in */}
+      {SB && authOpen && (
+        <div onClick={() => setAuthOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(10,13,14,.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 360, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 16, padding: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ ...h, fontSize: 22 }}>SIGN IN</div>
+              <button onClick={() => setAuthOpen(false)} style={{ background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+            </div>
+            <div style={{ fontSize: 13.5, color: C.stone, lineHeight: 1.5, margin: "6px 0 14px" }}>Save your spots and places, they lead the home screen on every device. No password, no spam.</div>
+            <button onClick={signInGoogle} style={{ width: "100%", background: C.bone, color: C.ink, border: "none", borderRadius: 10, padding: "12px 12px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer" }}>CONTINUE WITH GOOGLE</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0" }}>
+              <div style={{ flex: 1, height: 1, background: C.line }} />
+              <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, letterSpacing: 1 }}>OR</div>
+              <div style={{ flex: 1, height: 1, background: C.line }} />
+            </div>
+            <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMagicLink()} placeholder="you@email.com" type="email" autoComplete="email"
+              style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
+            <button onClick={sendMagicLink} style={{ width: "100%", marginTop: 8, background: "none", border: `1px solid ${C.moss}`, color: C.moss, borderRadius: 10, padding: "11px 12px", fontFamily: F.mono, fontSize: 11.5, letterSpacing: 1, cursor: "pointer" }}>EMAIL ME A SIGN IN LINK</button>
+            {authMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone, marginTop: 10, lineHeight: 1.5 }}>{authMsg}</div>}
+          </div>
+        </div>
+      )}
 
       {/* chat */}
       {view === "spot" && (
