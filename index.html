@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="data/spots.js"></script>
+<script src="data/spots.js?v=22"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
   #root { overflow-x: clip; }
@@ -193,7 +193,7 @@ function scoreAt(spot, sp, t, ctx) {
   const gate = ctx.mode === "wade" ? wadeGate(spot, ts, ctx) : 1;
   const modeF = modeFactor(spot, ctx.mode);
   const raw = 100 * w * seas * temp * tide * wind * light * sight * moon * gate * modeF;
-  return { score: clamp(Math.round(raw), 0, 100), seas, temp, tide, wind, light, sight, ts, spd };
+  return { score: clamp(Math.round(raw), 0, 100), seas, temp, tide, wind, light, sight, ts, spd, sstV: sstSpot };
 }
 function computeDay(spot, sp, date, ctx) {
   const hLo = ctx.events && ctx.events.length ? Math.min(...ctx.events.filter(e => Math.abs(e.date - date) < 86400000 * 1.2).map(e => e.v)) : 0;
@@ -221,6 +221,13 @@ const whyLine = (spot, sp, date, r) => {
   if (spS < 0.4 && spot.seasonNote) return `${spot.seasonNote} Prime here: ${spot.brief.prime}`;
   const seas = r && r.seas != null ? r.seas : seasonalFor(spot.c, sp, date) * spS;
   let a = seas >= 0.8 ? `Prime ${MNF[m]} for ${s.short.toLowerCase()}s here` : seas >= 0.5 ? `Solid ${MNF[m]} window` : seas >= 0.25 ? `Shoulder season, pick your days` : `Off season for ${s.short.toLowerCase()}s, this is a scouting score`;
+  if (r && r.score != null && r.score < 50 && seas >= 0.5) {
+    const why = [];
+    if (r.wind != null && r.wind <= 0.75 && r.spd != null) why.push(`wind ${Math.round(r.spd)} mph`);
+    if (r.temp != null && r.temp <= 0.6 && r.sstV != null) why.push(`water ${r.sstV}F running ${r.sstV > s.temp.hi ? "warm" : "cold"}`);
+    if (why.length < 2 && r.tide != null && r.tide <= 0.72) why.push(`a soft tide through the best light`);
+    a += why.length ? `, but today fights you: ${why.join(" and ")}. The season is right, the day is not` : `, but today's conditions knock the call down`;
+  }
   let b = spot.bait ? ` Bait watch: ${spot.bait.split(".")[0].toLowerCase()}.` : "";
   return a + "." + b;
 };
