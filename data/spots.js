@@ -8,7 +8,7 @@
 g.FG_CONFIG = {
   CHAT_ENDPOINT: "",      // Supabase edge function URL for the full AI guide. Empty = built-in local guide.
   WORLDTIDES_KEY: "",     // WorldTides API key for Bahamas tide times. Empty = tide-neutral scoring with honest labeling.
-  SITE_URL: "https://flyguide.github.io"
+  SITE_URL: "https://myflyguide.github.io"
 };
 
 /* ---------------- Species profiles ---------------- */

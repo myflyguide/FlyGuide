@@ -15,6 +15,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 /* ============================================================
    FLYGUIDE data file
@@ -26,7 +28,7 @@
 g.FG_CONFIG = {
   CHAT_ENDPOINT: "",      // Supabase edge function URL for the full AI guide. Empty = built-in local guide.
   WORLDTIDES_KEY: "",     // WorldTides API key for Bahamas tide times. Empty = tide-neutral scoring with honest labeling.
-  SITE_URL: "https://flyguide.github.io"
+  SITE_URL: "https://myflyguide.github.io"
 };
 
 /* ---------------- Species profiles ---------------- */
@@ -1351,8 +1353,15 @@ g.FG_SPOTS = [
 
 </script>
 <style>
-  html, body { margin: 0; padding: 0; background: #14181A; }
+  html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
+  #root { overflow-x: clip; }
   * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  .panelgrid > * { min-width: 0; }
+  .leaflet-container { background: #14181A; font-family: 'IBM Plex Mono', monospace; }
+  .leaflet-control-attribution { background: rgba(20,24,26,.75) !important; color: #6E7A72 !important; font-size: 9px !important; }
+  .leaflet-control-attribution a { color: #7C8B66 !important; }
+  .leaflet-tooltip { background: #20282B; color: #EAE5D8; border: 1px solid #2E3639; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 5px 8px; }
+  .leaflet-tooltip-top:before { border-top-color: #2E3639; }
   ::selection { background: #E8722A44; }
   .noscroll::-webkit-scrollbar { display: none; }
   .noscroll { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -1564,7 +1573,7 @@ const verdicts = (cid, date) => {
 
 /* ---------- search suggest ---------- */
 const SP_ALIASES = { striper: ["striper", "stripers", "striped bass", "bass"], albie: ["albie", "albies", "false albacore", "albacore", "little tunny", "funny fish"], tarpon: ["tarpon", "poon", "silver king"], snook: ["snook", "linesider"], redfish: ["redfish", "reds", "red drum"], bonefish: ["bonefish", "bones", "grey ghost"] };
-const suggestFor = (qRaw) => {
+const suggestFor = (qRaw, curCid) => {
   const q = qRaw.trim().toLowerCase(); if (!q) return [];
   const out = [];
   if (/^\d/.test(q)) {
@@ -1574,9 +1583,12 @@ const suggestFor = (qRaw) => {
   Object.keys(SP_ALIASES).forEach((sp) => { if (SP_ALIASES[sp].some((a) => a.startsWith(q) || q.startsWith(a))) out.push({ t: "sp", label: SPX[sp].name, sub: "species", sp }); });
   CORR.forEach((c) => {
     if (c.name.toLowerCase().includes(q)) out.push({ t: "place", label: c.name, sub: "region", cid: c.id });
-    (c.towns || []).forEach((tn) => { const k = tn.toLowerCase(); if (k.startsWith(q) || k.includes(q)) out.push({ t: "place", label: tn, sub: c.short, cid: c.id }); });
+    (c.towns || []).forEach((tn) => { const k = tn.toLowerCase(); if (k.startsWith(q) || (q.length >= 3 && k.includes(q))) out.push({ t: "place", label: tn, sub: c.short, cid: c.id }); });
   });
-  SPOTS.forEach((s) => { if (s.name.toLowerCase().includes(q) || (s.al || []).some((a) => a.includes(q))) out.push({ t: "spot", label: s.name, sub: s.area, cid: s.c, id: s.id }); });
+  if (q.length >= 3) {
+    const sorted = [...SPOTS].sort((a, b) => (a.c === curCid ? 0 : 1) - (b.c === curCid ? 0 : 1));
+    sorted.forEach((s) => { if (s.name.toLowerCase().includes(q) || (s.al || []).some((a) => a.includes(q))) out.push({ t: "spot", label: s.name, sub: s.area, cid: s.c, id: s.id }); });
+  }
   const seen = new Set();
   return out.filter((x) => { const k = x.t + x.label; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 7);
 };
@@ -1707,7 +1719,7 @@ function App() {
   const [showV, setShowV] = useState(false);
   const [geoSugs, setGeoSugs] = useState([]);
   const [nearby, setNearby] = useState(null);
-  const sugs = useMemo(() => suggestFor(q), [q]);
+  const sugs = useMemo(() => suggestFor(q, cid), [q, cid]);
   const allSugs = useMemo(() => [...sugs, ...geoSugs.filter((g) => !sugs.some((s) => s.label.toLowerCase() === g.label.toLowerCase()))].slice(0, 8), [sugs, geoSugs]);
   useEffect(() => {
     const qq = q.trim(); if (qq.length < 3) { setGeoSugs([]); return; }
@@ -1852,6 +1864,68 @@ function App() {
     }));
     return { c, best };
   }), [tides, wx, sst, mode]);
+  const homePins = useMemo(() => SPOTS.map((s) => {
+    const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
+    const d = computeDay(s, k, today, ctxFor(today, s));
+    return { s, lat: s.lat, lng: s.lng, name: s.name, peak: d.peak };
+  }), [tides, wx, sst, mode]);
+  const mapRef = useRef(null);
+  const spotMapRef = useRef(null);
+  useEffect(() => {
+    if (view !== "spot" || !window.L || !spotMapRef.current) return;
+    const L = window.L;
+    const m = L.map(spotMapRef.current, { zoomControl: false, dragging: !L.Browser.mobile, touchZoom: true, attributionControl: true });
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { attribution: "© OpenStreetMap © CARTO", maxZoom: 18 }).addTo(m);
+    const b = [[spot.lat, spot.lng]];
+    L.circleMarker([spot.lat, spot.lng], { radius: 9, color: "#14181A", weight: 2, fillColor: C.blaze, fillOpacity: 1 }).addTo(m).bindTooltip(spot.name, { direction: "top", offset: [0, -9] });
+    (spot.boat.ramps || []).forEach((r) => {
+      b.push([r.la, r.lo]);
+      L.circleMarker([r.la, r.lo], { radius: 6.5, color: "#14181A", weight: 1.5, fillColor: "#C9C2B0", fillOpacity: 0.95 }).addTo(m)
+        .bindTooltip("RAMP · " + r.n + " · tap for directions", { direction: "top", offset: [0, -7] })
+        .on("click", () => window.open(gmapsDir(r.la, r.lo), "_blank"));
+    });
+    (spot.boat.drops || []).forEach((d2) => {
+      b.push([d2.la, d2.lo]);
+      L.circleMarker([d2.la, d2.lo], { radius: 6.5, color: "#14181A", weight: 1.5, fillColor: C.water, fillOpacity: 0.95 }).addTo(m)
+        .bindTooltip("DROP · " + d2.n + " · tap for directions", { direction: "top", offset: [0, -7] })
+        .on("click", () => window.open(gmapsDir(d2.la, d2.lo), "_blank"));
+    });
+    ranking.filter((r) => r.spot.id !== spot.id).slice(0, 2).forEach((r) => {
+      if (havMi(spot.lat, spot.lng, r.spot.lat, r.spot.lng) <= 25) {
+        L.circleMarker([r.spot.lat, r.spot.lng], { radius: 5, color: "#14181A", weight: 1, fillColor: "#5A6468", fillOpacity: 0.9 }).addTo(m)
+          .bindTooltip(r.spot.name + " · " + to10(r.peak) + "/10", { direction: "top", offset: [0, -6] })
+          .on("click", () => jumpToSpot(r.spot));
+      }
+    });
+    if (b.length > 1) m.fitBounds(b, { padding: [30, 30] }); else m.setView(b[0], 12);
+    return () => { m.remove(); };
+  }, [view, spot.id]);
+  useEffect(() => {
+    if (view !== "home" || !window.L || !mapRef.current) return;
+    const L = window.L;
+    const m = L.map(mapRef.current, { zoomControl: false, dragging: !L.Browser.mobile, touchZoom: true, attributionControl: true });
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { attribution: "© OpenStreetMap © CARTO", maxZoom: 18 }).addTo(m);
+    const b = [];
+    homePins.forEach((p) => {
+      const col = p.peak >= 70 ? C.blaze : p.peak >= 50 ? "#C9C2B0" : "#5A6468";
+      const mk = L.circleMarker([p.lat, p.lng], { radius: 7, color: "#14181A", weight: 1.5, fillColor: col, fillOpacity: 0.95 }).addTo(m);
+      mk.bindTooltip(`${p.name} · ${to10(p.peak)}/10`, { direction: "top", offset: [0, -8] });
+      mk.on("click", () => jumpToSpot(p.s));
+      b.push([p.lat, p.lng]);
+    });
+    if (b.length) m.fitBounds(b, { padding: [26, 26] });
+    return () => { m.remove(); };
+  }, [view, homePins]);
+  const [geoMsg, setGeoMsg] = useState("");
+  const locateMe = () => {
+    if (!navigator.geolocation) { setGeoMsg("Location not available in this browser. Type your town instead."); return; }
+    setGeoMsg("Finding you...");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setGeoMsg(""); applyNear("your location", pos.coords.latitude, pos.coords.longitude); },
+      () => setGeoMsg("Location blocked. Type your town instead, works just as well."),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  };
   const [copied, setCopied] = useState(false);
   const shareSpot = () => { try { navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
 
@@ -1923,7 +1997,7 @@ function App() {
   };
   const searchUI = (
     <div style={{ position: "relative", marginBottom: 10 }}>
-      <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { if (allSugs[0]) pickPlace(allSugs[0]); else if (q.trim().length >= 3) { const t = q; setQ(""); locate(t); } } }} placeholder="Type a town name or zip code"
+      <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { if (allSugs[0]) pickPlace(allSugs[0]); else if (q.trim().length >= 3) { const t = q; setQ(""); locate(t); } } }} placeholder="Type a town name or zip code" type="search" name="fg-town" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="search"
         style={{ width: "100%", background: C.panel, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 12, padding: "14px 14px", outline: "none", fontFamily: F.body }} />
       {allSugs.length > 0 && (
         <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, marginTop: 6, overflow: "hidden", boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
@@ -2034,8 +2108,8 @@ function App() {
   })() : null;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.ink, color: C.bone, fontFamily: F.body, paddingBottom: "calc(90px + env(safe-area-inset-bottom))" }}>
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 13px" }}>
+    <div style={{ minHeight: "100vh", background: C.ink, color: C.bone, fontFamily: F.body, overflowX: "hidden", paddingBottom: "calc(90px + env(safe-area-inset-bottom))" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "calc(14px + env(safe-area-inset-top)) 13px 16px" }}>
 
         {/* header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -2050,6 +2124,12 @@ function App() {
             <div style={{ margin: "24px 0 8px", ...h, fontSize: "clamp(32px, 10vw, 46px)", lineHeight: 1.04 }}>WHERE ARE YOU FISHING?</div>
             <div style={{ color: C.stone, fontSize: 15, lineHeight: 1.55, marginBottom: 14 }}>Live scores, real tides, and a 30-day outlook for {SPOTS.length} fly spots from Maine to the Bahamas. Type a town, or take today's call.</div>
             {searchUI}
+            <button onClick={locateMe} style={{ width: "100%", background: C.blaze, color: C.ink, border: "none", borderRadius: 12, padding: "13px 14px", fontFamily: F.disp, fontWeight: 700, fontSize: 17, letterSpacing: 0.5, cursor: "pointer", marginBottom: 8 }}>USE MY LOCATION</button>
+            {geoMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.dim, marginBottom: 8 }}>{geoMsg}</div>}
+            <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+              <div style={{ padding: "11px 14px 9px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase" }}>The water · today's scores · tap a pin</div>
+              <div ref={mapRef} style={{ height: 300, width: "100%" }} />
+            </div>
             <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", margin: "20px 0 8px" }}>Today's top calls</div>
             {homeBest.map(({ c, best }) => (
               <button key={c.id} onClick={() => { skipReset.current = true; setCid(c.id); if (best) setSp(best.k); setManual(false); setShowV(false); setNearby(null); setView("spot"); }}
@@ -2141,7 +2221,7 @@ function App() {
           <div style={{ ...card, background: `linear-gradient(160deg, ${C.panel2}, ${C.panel})`, marginBottom: 12 }}>
             <div style={label}>{manual ? "Your pick" : "The call"} · {DOW[date.getDay()]} {MN[date.getMonth()]} {date.getDate()} · {SPX[sp].name}</div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ ...h, fontSize: "clamp(23px, 7vw, 30px)", lineHeight: 1.04 }}>{spot.name}</div>
                 <div style={{ color: C.dim, fontSize: 13.5, marginTop: 3 }}>{spot.area} · {spot.reg}</div>
                 <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
@@ -2203,7 +2283,7 @@ function App() {
         </select>
 
         {/* panels */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+        <div className="panelgrid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
 
           <div style={card}>
             <div style={label}>Tide & sky</div>
@@ -2279,6 +2359,14 @@ function App() {
                 <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 8 }}>Not for navigation. Read your charts, idle the skinny stuff, give other anglers the room you'd want.</div>
               </div>
             )}
+          </div>
+
+          <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "11px 14px 9px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase" }}>
+              On the chart · <span style={{ color: C.blaze }}>spot</span> · <span style={{ color: C.stone }}>ramps</span> · <span style={{ color: C.water }}>drops</span> · <span style={{ color: "#5A6468" }}>backups</span>
+            </div>
+            <div ref={spotMapRef} style={{ height: 240, width: "100%" }} />
+            <div style={{ padding: "9px 14px 12px", fontFamily: F.mono, fontSize: 10, color: C.dim }}>Tap a ramp or drop for directions. Not for navigation.</div>
           </div>
 
           <div style={card}>
