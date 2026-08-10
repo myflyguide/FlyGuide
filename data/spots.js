@@ -6,8 +6,12 @@
 (function (g) {
 
 g.FG_CONFIG = {
-  CHAT_ENDPOINT: "",      // Supabase edge function URL for the full AI guide. Empty = built-in local guide.
-  WORLDTIDES_KEY: "",     // WorldTides API key for Bahamas tide times. Empty = tide-neutral scoring with honest labeling.
+  CHAT_ENDPOINT: "",
+  WORLDTIDES_KEY: "",
+  SUPABASE_URL: "https://jluctcywtnyaxmaxvxbw.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsdWN0Y3l3dG55YXhtYXh2eGJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNzY0NDIsImV4cCI6MjEwMTk1MjQ0Mn0.fHbIm3amgzoMI_G3eSiqVxGxdyu6340hrJMKX4HBpCk",
+  GOATCOUNTER_CODE: "",
+  AUTH_GOOGLE: false,
   SITE_URL: "https://myflyguide.github.io"
 };
 
