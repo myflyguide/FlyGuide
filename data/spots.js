@@ -11,7 +11,7 @@ g.FG_CONFIG = {
   SUPABASE_URL: "https://jluctcywtnyaxmaxvxbw.supabase.co",       // Supabase project URL for sign in and favorites. Empty = no accounts, app runs exactly as before.
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsdWN0Y3l3dG55YXhtYXh2eGJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzNzY0NDIsImV4cCI6MjEwMTk1MjQ0Mn0.fHbIm3amgzoMI_G3eSiqVxGxdyu6340hrJMKX4HBpCk",  // Supabase anon public key. Safe to publish, row level security protects the data.
   GOATCOUNTER_CODE: "",   // GoatCounter site code for privacy friendly analytics. Empty = no analytics script loads.
-  AUTH_GOOGLE: false,     // Flip to true only after the Google provider is configured in Supabase. Email sign in links work without it.
+  AUTH_GOOGLE: true,     // Flip to true only after the Google provider is configured in Supabase. Email sign in links work without it.
   SITE_URL: "https://myflyguide.github.io"
 };
 
