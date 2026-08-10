@@ -2078,6 +2078,7 @@ function App() {
   const [copied, setCopied] = useState(false);
   const shareSpot = () => { try { navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
   const [cardBusy, setCardBusy] = useState(false);
+  const [scrubT, setScrubT] = useState(null);
   const makeCard = async () => {
     if (cardBusy || !dm) return;
     setCardBusy(true);
@@ -2398,8 +2399,22 @@ function App() {
     const isToday = iso(date) === iso(today);
     const nowX = isToday && now >= t0 && now <= t1 ? x(now) : null;
     const nowTs = nowX != null ? tideStateAt(ctxToday.events, now) : null;
+    const scrubFromClientX = (el, cx) => {
+      const rect = el.getBoundingClientRect();
+      if (!rect.width) return;
+      const frac = clamp((cx - rect.left) / rect.width, 0, 1);
+      const t = new Date(t0.getTime() + Math.round(frac * (t1 - t0) / 600000) * 600000);
+      setScrubT(t);
+    };
+    const scrubX = scrubT && scrubT >= t0 && scrubT <= t1 ? x(scrubT) : null;
+    const scrubTs = scrubX != null ? tideStateAt(ctxToday.events, scrubT) : null;
     return (
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", touchAction: "pan-y", cursor: "crosshair" }}
+        onMouseMove={(e) => scrubFromClientX(e.currentTarget, e.clientX)}
+        onMouseLeave={() => setScrubT(null)}
+        onTouchStart={(e) => e.touches[0] && scrubFromClientX(e.currentTarget, e.touches[0].clientX)}
+        onTouchMove={(e) => e.touches[0] && scrubFromClientX(e.currentTarget, e.touches[0].clientX)}
+        onTouchEnd={() => setScrubT(null)}>
         {hrs.map((h2) => { const t = new Date(date); t.setHours(h2, 0, 0, 0); const xx = x(t); return (
           <g key={h2}>
             <line x1={xx} x2={xx} y1={topPad - 4} y2={H - botPad + 4} stroke={C.line} strokeWidth="1" />
@@ -2425,6 +2440,13 @@ function App() {
           <g>
             <line x1={nowX} x2={nowX} y1={topPad - 4} y2={H - botPad + 4} stroke={C.bone} strokeWidth="1" strokeDasharray="3,3" opacity="0.8" />
             {nowTs && <circle cx={nowX} cy={y(nowTs.h)} r="4.5" fill={C.blaze} />}
+          </g>
+        )}
+        {scrubX != null && (
+          <g pointerEvents="none">
+            <line x1={scrubX} x2={scrubX} y1={topPad - 4} y2={H - botPad + 4} stroke={C.blaze} strokeWidth="1.5" />
+            {scrubTs && <circle cx={scrubX} cy={y(scrubTs.h)} r="5" fill={C.ink} stroke={C.blaze} strokeWidth="2.5" />}
+            <text x={scrubX} y={topPad - 8} textAnchor={scrubX < 40 ? "start" : scrubX > W - 40 ? "end" : "middle"} fill={C.blaze} fontSize="10" fontFamily="IBM Plex Mono">{clock(scrubT)}</text>
           </g>
         )}
       </svg>
@@ -2718,6 +2740,24 @@ function App() {
           <div style={card}>
             <div style={label}>Tide & sky</div>
             {svg || <div style={{ fontSize: 13.5, color: C.dim, lineHeight: 1.5 }}>{spot.station ? "Pulling tide predictions..." : CFG.WORLDTIDES_KEY ? "Pulling WorldTides for this flat..." : "No tide station covers this water. Scores here run on season, light, and weather, honestly labeled at lower confidence. Drop a WorldTides key in data/spots.js to light up exact times."}</div>}
+            {svg && (() => {
+              const rt = scrubT || (iso(date) === iso(today) ? now : dm && dm.peakT);
+              if (!rt) return null;
+              const near = (ctxToday.events || []).filter((e) => Math.abs(e.date - date) < 86400000 * 1.2).map((e) => e.v);
+              const c2 = { ...ctxToday, hLo: near.length ? Math.min(...near) : 0, hHi: near.length ? Math.max(...near) : 1 };
+              const r = scoreAt(spot, sp, rt, c2);
+              const ts2 = ctxToday.events ? tideStateAt(ctxToday.events, rt) : null;
+              const wnd = Math.round(ctxToday.windByHour[rt.getHours()] != null ? ctxToday.windByHour[rt.getHours()] : ctxToday.windClimo);
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "2px 0 10px", flexWrap: "wrap" }}>
+                  <div style={{ fontFamily: F.mono, fontSize: 11, color: scrubT ? C.ink : C.dim, background: scrubT ? C.blaze : "transparent", border: `1px solid ${scrubT ? C.blaze : C.line}`, borderRadius: 7, padding: "4px 8px", fontWeight: scrubT ? 700 : 400 }}>{scrubT ? "AT " + clock(rt).toUpperCase() : (iso(date) === iso(today) ? "NOW " : "PEAK ") + clock(rt).toUpperCase()}</div>
+                  <div style={{ fontFamily: F.mono, fontSize: 11.5, color: C.stone }}>
+                    {ts2 ? ts2.h.toFixed(1) + "ft " + (ts2.rising ? "flooding" : "ebbing") : "no tide feed"} · wind {wnd} mph · call <span style={{ color: r.score >= 70 ? C.blaze : r.score >= 50 ? C.bone : C.dim, fontWeight: 700 }}>{to10(r.score)}/10</span>
+                  </div>
+                  {!scrubT && <div style={{ fontFamily: F.mono, fontSize: 10, color: C.dim, marginLeft: "auto" }}>SLIDE THE CHART</div>}
+                </div>
+              );
+            })()}
             {ctxToday.events && (() => {
               const t0 = new Date(date); t0.setHours(0, 0, 0, 0); const t1 = new Date(date); t1.setHours(23, 59, 0, 0);
               const evs2 = ctxToday.events.filter((e) => e.date >= t0 && e.date <= t1);
