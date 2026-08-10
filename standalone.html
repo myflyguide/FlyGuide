@@ -31,6 +31,7 @@ g.FG_CONFIG = {
   WORLDTIDES_KEY: "",     // WorldTides API key for Bahamas tide times. Empty = tide-neutral scoring with honest labeling.
   SUPABASE_URL: "",       // Supabase project URL for sign in and favorites. Empty = no accounts, app runs exactly as before.
   SUPABASE_ANON_KEY: "",  // Supabase anon public key. Safe to publish, row level security protects the data.
+  GOATCOUNTER_CODE: "",   // GoatCounter site code for privacy friendly analytics. Empty = no analytics script loads.
   SITE_URL: "https://flyguide.github.io"
 };
 
@@ -1354,6 +1355,7 @@ g.FG_SPOTS = [
 
 })(typeof window !== "undefined" ? window : globalThis);
 
+
 </script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
@@ -1393,6 +1395,14 @@ const F = { disp: "'Barlow Condensed', sans-serif", body: "'Barlow', sans-serif"
 /* ---------- data handles ---------- */
 const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDORS, SPOTS = window.FG_SPOTS, KB = window.FG_KB, FBX = window.FG_FLYBOX || {};
 const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
+const GRADES = ["SKUNKED", "SLOW", "DECENT", "LIGHTS OUT"];
+const wrapText = (x, text, tx, ty, maxW, lh) => {
+  const words = String(text).split(" "); let line = "", yy = ty;
+  words.forEach((w) => { const t = line ? line + " " + w : w; if (x.measureText(t).width > maxW && line) { x.fillText(line, tx, yy); line = w; yy += lh; } else line = t; });
+  if (line) x.fillText(line, tx, yy);
+  return yy;
+};
+if (CFG.GOATCOUNTER_CODE) { try { const gcs = document.createElement("script"); gcs.async = true; gcs.src = "https://gc.zgo.at/count.js"; gcs.setAttribute("data-goatcounter", "https://" + CFG.GOATCOUNTER_CODE + ".goatcounter.com/count"); document.head.appendChild(gcs); } catch (e) {} }
 const corrById = (id) => CORR.find((c) => c.id === id) || CORR[0];
 const MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MNF = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1823,6 +1833,49 @@ function App() {
   };
   const signOut = async () => { setProfOpen(false); try { await SB.auth.signOut(); } catch (e) {} };
 
+  /* catch log + grade the guide + the record */
+  const [logOpen, setLogOpen] = useState(false);
+  const [logForm, setLogForm] = useState({ species: "", len: "", fly: "" });
+  const [logMsg, setLogMsg] = useState("");
+  const [catches, setCatches] = useState([]);
+  const [graded, setGraded] = useState({});
+  const [hitRate, setHitRate] = useState(null);
+  useEffect(() => {
+    if (!SB || !user) { setCatches([]); setGraded({}); return; }
+    let alive = true;
+    SB.from("catches").select("*").order("caught_at", { ascending: false }).limit(6).then(({ data }) => { if (alive) setCatches(data || []); }).catch(() => {});
+    SB.from("reports").select("spot_id,day,grade").then(({ data }) => { if (!alive) return; const m = {}; (data || []).forEach((r) => { m[r.spot_id + "|" + r.day] = r.grade; }); setGraded(m); }).catch(() => {});
+    return () => { alive = false; };
+  }, [user ? user.id : null]);
+  useEffect(() => {
+    if (!SB) return;
+    SB.rpc("fg_hit_rate").then(({ data }) => { if (data && data.n8 >= 10) setHitRate(data); }).catch(() => {});
+  }, []);
+  const openLog = () => { if (!SB) return; if (!user) { setAuthMsg(""); setAuthOpen(true); return; } setLogForm({ species: sp, len: "", fly: "" }); setLogMsg(""); setLogOpen(true); };
+  const saveCatch = async () => {
+    if (!SB || !user) return;
+    const lenRaw = logForm.len.trim();
+    const len = lenRaw === "" ? null : parseFloat(lenRaw);
+    if (lenRaw !== "" && (!isFinite(len) || len <= 0 || len > 120)) { setLogMsg("Length in inches, numbers only."); return; }
+    const row = { user_id: user.id, spot_id: spot.id, species: logForm.species || sp,
+      length_in: len, fly: logForm.fly.trim() || null,
+      score: dm ? dm.peak : null,
+      tide: tsNow ? (tsNow.rising ? "flood" : "ebb") + (tsNow.rate < 0.35 ? " near slack" : "") : "no feed",
+      wind: Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + " mph",
+      temp: (ctxToday.sst + sstOffFor(spot, date)) + "F",
+      moon: moonName(moonP), mode };
+    setLogMsg("Logged. Snapshot saved with it.");
+    try { const { data } = await SB.from("catches").insert(row).select().single(); setCatches((p) => [data || { ...row, id: "tmp-" + Date.now(), caught_at: new Date().toISOString() }, ...p].slice(0, 6)); } catch (e) {}
+    setTimeout(() => setLogOpen(false), 700);
+  };
+  const sendGrade = async (g) => {
+    if (!SB) return; if (!user) { setAuthMsg(""); setAuthOpen(true); return; }
+    const key = spot.id + "|" + iso(today);
+    if (graded[key] != null) return;
+    setGraded((p) => ({ ...p, [key]: g }));
+    try { await SB.from("reports").insert({ user_id: user.id, spot_id: spot.id, day: iso(today), grade: g, score_called: board[0] ? board[0].peak : (dm ? dm.peak : null) }); } catch (e) {}
+  };
+
   /* home map instance + locate */
   const homeMapObj = useRef(null);
   const youMarker = useRef(null);
@@ -2016,6 +2069,42 @@ function App() {
   };
   const [copied, setCopied] = useState(false);
   const shareSpot = () => { try { navigator.clipboard.writeText(location.href); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
+  const [cardBusy, setCardBusy] = useState(false);
+  const makeCard = async () => {
+    if (cardBusy || !dm) return;
+    setCardBusy(true);
+    try {
+      const cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1080;
+      const x = cv.getContext("2d");
+      x.fillStyle = "#14181A"; x.fillRect(0, 0, 1080, 1080);
+      x.fillStyle = "#E8722A"; x.fillRect(0, 0, 1080, 14);
+      x.fillStyle = "#EAE5D8"; x.font = "700 46px Georgia, serif"; x.fillText("FLYGUIDE", 72, 132);
+      x.fillStyle = "#8FA98F"; x.font = "26px Menlo, monospace";
+      x.fillText((iso(date) === iso(today) ? "TODAY, " : "") + date.toDateString().toUpperCase(), 72, 180);
+      x.fillStyle = dm.peak >= 70 ? "#E8722A" : dm.peak >= 50 ? "#C9C2B0" : "#5A6468";
+      x.textAlign = "right";
+      x.font = "800 290px Georgia, serif"; x.fillText(String(to10(dm.peak)), 1008, 420);
+      x.font = "26px Menlo, monospace"; x.fillText("OUT OF 10", 1008, 464);
+      x.textAlign = "left";
+      x.fillStyle = "#EAE5D8"; x.font = "700 62px Georgia, serif";
+      const endY = wrapText(x, spot.name, 72, 566, 620, 70);
+      x.fillStyle = "#C9C2B0"; x.font = "29px Menlo, monospace"; x.fillText((spot.area + " · " + SPX[sp].name).toUpperCase(), 72, endY + 52);
+      let y = endY + 128;
+      x.fillStyle = "#8FA98F"; x.font = "28px Menlo, monospace";
+      const lines = [];
+      if (whenToday.length) lines.push("WHEN: " + whenToday.map((w) => clock(w.s).toUpperCase() + " TO " + clock(w.e).toUpperCase()).join(", "));
+      const nx = (ctxToday.events || []).filter((e) => e.date > now).slice(0, 1).map((e) => (e.hl === "H" ? "HIGH " : "LOW ") + clock(e.date).toUpperCase())[0];
+      if (nx) lines.push("NEXT TIDE: " + nx);
+      lines.push("WIND " + Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo) + " MPH · WATER ~" + (ctxToday.sst + sstOffFor(spot, date)) + "F · " + moonName(moonP).toUpperCase());
+      lines.forEach((L) => { x.fillText(L, 72, y); y += 50; });
+      x.fillStyle = "#5A6468"; x.font = "25px Menlo, monospace"; x.fillText("THE GUIDE'S CALL, EVERY DAY · FLYGUIDE.GITHUB.IO", 72, 1002);
+      const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
+      const file = new File([blob], "flyguide-" + spot.id + "-" + iso(date) + ".png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "FlyGuide: " + spot.name }); }
+      else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+    } catch (e) {}
+    setCardBusy(false);
+  };
 
   /* 30-day board for selected spot */
   const nearbyModels = useMemo(() => {
@@ -2044,6 +2133,25 @@ function App() {
   const dayOff = Math.round((date - today) / 86400000);
   const conf = confidence(dayOff, spot);
   const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonEmoji(moonP)} ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
+
+  const whenToday = useMemo(() => {
+    if (!dm || !dm.windows.length) return [];
+    const at = (hh) => { const t = new Date(date); t.setHours(Math.floor(hh), Math.round((hh % 1) * 60), 0, 0); return t; };
+    const scoreOf = (w) => Math.max(...dm.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
+    const ws = [...dm.windows].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 2).sort((a, b) => a[0] - b[0]);
+    return ws.map(([a, b]) => {
+      const s = at(a + 0.5), e = at(b + 0.5), mid = new Date((s.getTime() + e.getTime()) / 2);
+      const ts = ctxToday.events ? tideStateAt(ctxToday.events, mid) : null;
+      let why = ts ? (ts.rising ? "on the flood" : "on the ebb") + (ts.next ? (ts.next.hl === "H" ? " into high " : " into low ") + clock(ts.next.date) : "") : "";
+      if (ctxToday.sun) {
+        const rH = ctxToday.sun.rise.getHours() + ctxToday.sun.rise.getMinutes() / 60;
+        const sH = ctxToday.sun.set.getHours() + ctxToday.sun.set.getMinutes() / 60;
+        if (a + 0.5 <= rH + 1.5) why = ("first light " + why).trim();
+        else if (b + 0.5 >= sH - 1.5) why = ("last light " + why).trim();
+      }
+      return { s, e, why: why || "prime conditions" };
+    });
+  }, [dm, date]);
 
   const jumpToSpot = (s, stay) => { skipReset.current = true; setCid(s.c); if (!((s.sp[sp] || 0) > 0)) { const f = Object.keys(s.sp).find((k) => s.sp[k] > 0); if (f) setSp(f); } setSpotId(s.id); setManual(true); setView("spot"); if (!stay) scrollToHero(); };
 
@@ -2101,6 +2209,68 @@ function App() {
       if (g) applyNear(`${g.x.name}, ${g.x.admin1 || g.x.country || ""}`, g.x.latitude, g.x.longitude);
     } catch (e) {}
   };
+
+  /* trip planner: best water each day of a window */
+  const geoLookup = async (raw) => {
+    const t = raw.trim();
+    if (/^\d{5}$/.test(t)) {
+      const r = await fetch(`https://api.zippopotam.us/us/${t}`);
+      if (!r.ok) return null;
+      const j = await r.json(); const p = j.places && j.places[0];
+      return p ? { label: `${p["place name"]}, ${p["state abbreviation"]}`, la: parseFloat(p.latitude), lo: parseFloat(p.longitude) } : null;
+    }
+    const name = t.split(",")[0].replace(/\s+(NH|MA|RI|CT|NY|NJ|NC|FL|ME)$/i, "");
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=en&format=json`);
+    const j = await r.json();
+    const g = (j.results || []).filter((x) => x.country_code === "US" || x.country_code === "BS")
+      .map((x) => ({ x, mi: nearestSpots(x.latitude, x.longitude, 1)[0].mi })).sort((a, b) => a.mi - b.mi)[0];
+    return g ? { label: `${g.x.name}, ${g.x.admin1 || g.x.country || ""}`, la: g.x.latitude, lo: g.x.longitude } : null;
+  };
+  const [plan, setPlan] = useState({ place: "", start: iso(today), nights: 3, sp: "any" });
+  const [planBusy, setPlanBusy] = useState(false);
+  const [planReq, setPlanReq] = useState(null);
+  const [planRes, setPlanRes] = useState(null);
+  const [planMsg, setPlanMsg] = useState("");
+  const runPlan = async () => {
+    if (planBusy) return;
+    if (!plan.place.trim()) { setPlanMsg("Type a town or zip first."); return; }
+    setPlanBusy(true); setPlanMsg(""); setPlanRes(null); setPlanReq(null);
+    try {
+      const g = await geoLookup(plan.place);
+      if (!g) { setPlanMsg("Could not place that town. Try the nearest bigger town or a zip."); setPlanBusy(false); return; }
+      const startD = dayStart(new Date(plan.start + "T12:00:00"));
+      const off0 = Math.round((startD - today) / 86400000);
+      if (off0 < 0) { setPlanMsg("That start date already happened."); setPlanBusy(false); return; }
+      if (off0 > 29) { setPlanMsg("Past the 30-day board. Confidence out there is junk, pick a closer start."); setPlanBusy(false); return; }
+      const nights = Math.max(1, Math.min(plan.nights, 30 - off0));
+      const cand = nearestSpots(g.la, g.lo, 24).filter((x) => x.mi <= 120)
+        .filter(({ s }) => plan.sp === "any" ? true : (s.sp[plan.sp] || 0) > 0).slice(0, 8);
+      if (!cand.length) { setPlanMsg("No covered water within 120 miles of there" + (plan.sp !== "any" ? " holding " + SPX[plan.sp].short.toLowerCase() + "s" : "") + ". Corridors so far: Northeast, Florida, Bahamas."); setPlanBusy(false); return; }
+      cand.forEach(({ s }) => fetchStation(s.station));
+      setPlanReq({ label: g.label, startD, off0, nights, cand });
+    } catch (e) { setPlanMsg("Planner hit a snag. Try again."); setPlanBusy(false); }
+  };
+  useEffect(() => {
+    if (!planReq) return;
+    const timer = setTimeout(() => {
+      const { label, startD, off0, nights, cand } = planReq;
+      const rows = [];
+      for (let i = 0; i < nights; i++) {
+        const dd = addDays(startD, i);
+        let bestR = null;
+        cand.forEach(({ s, mi }) => {
+          const k = plan.sp !== "any" && (s.sp[plan.sp] || 0) > 0 ? plan.sp : Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
+          const d = computeDay(s, k, dd, ctxFor(dd, s));
+          if (!bestR || d.peak > bestR.peak) bestR = { date: dd, s, k, mi, peak: d.peak, conf: confidence(off0 + i, s) };
+        });
+        if (bestR) rows.push(bestR);
+      }
+      const top = rows.reduce((bi, x, i2, arr) => (x.peak * x.conf > arr[bi].peak * arr[bi].conf ? i2 : bi), 0);
+      setPlanRes({ label, rows, top }); setPlanBusy(false); setPlanReq(null);
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [planReq, tides]);
+  const jumpToPlan = (r) => { jumpToSpot(r.s); setDate(r.date); };
   const pickPlace = (g) => {
     setQ("");
     if (g.t === "geo") { applyNear(g.label, g.la, g.lo); return; }
@@ -2243,7 +2413,7 @@ function App() {
                 <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 70, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 12, padding: 14, width: 240, boxShadow: "0 14px 34px rgba(0,0,0,.5)" }}>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{(user.user_metadata && user.user_metadata.full_name) || "Angler"}</div>
                   <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 2, overflowWrap: "anywhere" }}>{user.email}</div>
-                  <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.moss, marginTop: 10, letterSpacing: 0.5 }}>SAVED: {favSpotIds.length} SPOT{favSpotIds.length === 1 ? "" : "S"} · {favPlaces.length} PLACE{favPlaces.length === 1 ? "" : "S"}</div>
+                  <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.moss, marginTop: 10, letterSpacing: 0.5 }}>SAVED: {favSpotIds.length} SPOT{favSpotIds.length === 1 ? "" : "S"} · {favPlaces.length} PLACE{favPlaces.length === 1 ? "" : "S"} · LOG: {catches.length}{catches.length === 6 ? "+" : ""}</div>
                   <div style={{ fontSize: 12.5, color: C.dim, marginTop: 6, lineHeight: 1.45 }}>Your favorites lead the home screen. Save spots with the star on any call, save places from the search card.</div>
                   <button onClick={signOut} style={{ marginTop: 12, width: "100%", background: "none", border: `1px solid ${C.line}`, color: C.stone, borderRadius: 8, padding: "9px 10px", fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1, cursor: "pointer" }}>SIGN OUT</button>
                 </div>
@@ -2258,6 +2428,9 @@ function App() {
           <div>
             <div style={{ margin: "24px 0 8px", ...h, fontSize: "clamp(32px, 10vw, 46px)", lineHeight: 1.04 }}>WHERE ARE YOU FISHING?</div>
             <div style={{ color: C.stone, fontSize: 15, lineHeight: 1.55, marginBottom: 14 }}>Live scores, real tides, and a 30-day outlook for {SPOTS.length} fly spots from Maine to the Bahamas. Type a town, pick your fish, or tap a pin.</div>
+            {hitRate && (
+              <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.moss, letterSpacing: 0.6, marginBottom: 12, lineHeight: 1.6 }}>THE RECORD: OUR 8+ CALLS FISHED DECENT OR BETTER {Math.round(100 * hitRate.hits8 / hitRate.n8)}% OF THE TIME · {hitRate.n8} ANGLER GRADES, WE COUNT THE SKUNKS TOO</div>
+            )}
             {user && (yourWater.length > 0 || favPlaces.length > 0) && (
               <div style={{ background: C.panel, border: `1px solid ${C.blaze}44`, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
                 <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.blaze, textTransform: "uppercase", marginBottom: 8 }}>Your water · today's call on your favorites</div>
@@ -2277,6 +2450,16 @@ function App() {
                     <div style={{ ...h, fontSize: 21, lineHeight: 1, color: peak >= 70 ? C.blaze : peak >= 50 ? C.stone : C.dim }}>{to10(peak)}<span style={{ fontSize: 11, color: C.dim }}>/10</span></div>
                   </button>
                 ))}
+              </div>
+            )}
+            {user && catches.length > 0 && (
+              <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
+                <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 4 }}>Your log · latest fish</div>
+                {catches.map((cc) => { const s2 = SPOTS.find((x) => x.id === cc.spot_id); return (
+                  <button key={cc.id} onClick={() => s2 && jumpToSpot(s2)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", borderTop: `1px solid ${C.line}`, color: C.stone, padding: "9px 2px", fontSize: 13, cursor: "pointer", lineHeight: 1.5 }}>
+                    {new Date(cc.caught_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {s2 ? s2.name : cc.spot_id} · {SPX[cc.species] ? SPX[cc.species].short : cc.species}{cc.length_in ? " " + cc.length_in + "in" : ""}{cc.fly ? " · " + cc.fly : ""}{cc.score != null ? " · called " + to10(cc.score) + "/10" : ""}
+                  </button>
+                ); })}
               </div>
             )}
             {searchUI}
@@ -2301,6 +2484,40 @@ function App() {
                 <button onClick={zoomMapToMe} title="Zoom to my location" aria-label="Zoom to my location"
                   style={{ position: "absolute", right: 12, bottom: 12, zIndex: 1000, width: 44, height: 44, borderRadius: 22, background: C.panel2, border: `1px solid ${C.line}`, color: C.bone, fontSize: 19, cursor: "pointer", boxShadow: "0 6px 18px rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>{"\uD83D\uDCCD"}</button>
               </div>
+            </div>
+            <div style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
+              <div style={{ fontFamily: F.mono, fontSize: 10.5, letterSpacing: 1.2, color: C.dim, textTransform: "uppercase", marginBottom: 8 }}>Plan a trip · the best water each day of your window</div>
+              <input value={plan.place} onChange={(e) => setPlan({ ...plan, place: e.target.value })} onKeyDown={(e) => e.key === "Enter" && runPlan()} placeholder="Town or zip you're staying near" type="search" autoComplete="off" autoCorrect="off" spellCheck={false}
+                style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
+              <div style={{ display: "flex", gap: 7, marginTop: 8 }}>
+                <input type="date" value={plan.start} min={iso(today)} max={iso(addDays(today, 29))} onChange={(e) => setPlan({ ...plan, start: e.target.value })}
+                  style={{ flex: 1.3, minWidth: 0, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "10px 8px", fontFamily: F.mono, fontSize: 12, outline: "none", colorScheme: "dark" }} />
+                <select value={plan.nights} onChange={(e) => setPlan({ ...plan, nights: parseInt(e.target.value, 10) })}
+                  style={{ flex: 0.8, minWidth: 0, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "10px 6px", fontFamily: F.mono, fontSize: 12, outline: "none" }}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n} day{n > 1 ? "s" : ""}</option>)}
+                </select>
+                <select value={plan.sp} onChange={(e) => setPlan({ ...plan, sp: e.target.value })}
+                  style={{ flex: 1, minWidth: 0, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "10px 6px", fontFamily: F.mono, fontSize: 12, outline: "none" }}>
+                  <option value="any">Any fish</option>
+                  {Object.keys(SPX).map((k) => <option key={k} value={k}>{SPX[k].name}</option>)}
+                </select>
+              </div>
+              <button onClick={runPlan} disabled={planBusy} style={{ width: "100%", marginTop: 8, background: C.moss, color: C.ink, border: "none", borderRadius: 10, padding: "12px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer", opacity: planBusy ? 0.7 : 1 }}>{planBusy ? "READING THE WATER..." : "PLAN IT"}</button>
+              {planMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.dim, marginTop: 8, lineHeight: 1.5 }}>{planMsg}</div>}
+              {planRes && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginBottom: 6 }}>NEAR {planRes.label.toUpperCase()} · TAP A DAY TO OPEN THAT CALL</div>
+                  {planRes.rows.map((r, i) => (
+                    <button key={i} onClick={() => jumpToPlan(r)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: i === planRes.top ? C.panel2 : C.tile, border: `1px solid ${i === planRes.top ? C.blaze : C.line}`, borderRadius: 10, padding: "9px 11px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13.5 }}>{i === planRes.top ? "BEST · " : ""}{DOW[r.date.getDay()]} {r.date.getMonth() + 1}/{r.date.getDate()} · {r.s.name}</div>
+                        <div style={{ color: C.dim, fontSize: 11.5 }}>{SPX[r.k].short} · {Math.round(r.mi)} mi out · {confLabel(r.conf).toLowerCase()} {r.conf}%</div>
+                      </div>
+                      <div style={{ ...h, fontSize: 20, lineHeight: 1, color: r.peak >= 70 ? C.blaze : r.peak >= 50 ? C.stone : C.dim, flexShrink: 0, marginLeft: 8 }}>{to10(r.peak)}<span style={{ fontSize: 10.5, color: C.dim }}>/10</span></div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 16 }}>
               {["LIVE NOAA TIDES", "30-DAY CONFIDENCE BOARD", "RANKED FLY BOX", "ASK THE GUIDE"].map((t2) => (
@@ -2380,17 +2597,33 @@ function App() {
               </div>
             </div>
             <div style={{ marginTop: 12, fontSize: 14.5, color: C.stone, lineHeight: 1.5 }}>{whyLine(spot, sp, date, dm.best)}</div>
+            {whenToday.length > 0 && (
+              <div style={{ marginTop: 10, border: `1px solid ${C.blaze}55`, background: C.blazeSoft, borderRadius: 10, padding: "9px 12px" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: 1.2, color: C.blaze, marginBottom: 3 }}>WHEN {iso(date) === iso(today) ? "TODAY" : DOW[date.getDay()].toUpperCase() + " " + (date.getMonth() + 1) + "/" + date.getDate()}</div>
+                {whenToday.map((w, i) => (
+                  <div key={i} style={{ fontSize: 14.5, color: C.bone, lineHeight: 1.55 }}>{clock(w.s)} to {clock(w.e)}, {w.why}</div>
+                ))}
+              </div>
+            )}
+            {whenToday.length === 0 && !ctxToday.events && ctxToday.sun && (
+              <div style={{ marginTop: 10, fontFamily: F.mono, fontSize: 12, color: C.dim }}>No tide feed on this water, fish first and last light: {clock(ctxToday.sun.rise)} and {clock(ctxToday.sun.set)}.</div>
+            )}
             <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-              {dm.windows.length > 0 && (
-                <div style={{ fontFamily: F.mono, fontSize: 12.5, color: C.blaze, border: `1px solid ${C.blaze}55`, background: C.blazeSoft, borderRadius: 8, padding: "7px 10px" }}>
-                  BITE {dm.windows.map(([a, b]) => `${a > 12 ? a - 12 : a}${a >= 12 ? "P" : "A"}\u2013${b > 12 ? b - 12 : b}${b >= 12 ? "P" : "A"}`).join(" · ")}
-                </div>
-              )}
               <a href={gmapsDir(spot.lat, spot.lng)} target="_blank" rel="noopener" style={{ fontFamily: F.mono, fontSize: 12.5, color: C.ink, background: C.stone, borderRadius: 8, padding: "7px 12px", textDecoration: "none", fontWeight: 600 }}>DIRECTIONS</a>
               <button onClick={shareSpot} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: copied ? C.ok : C.dim, border: `1px solid ${copied ? C.ok : C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{copied ? "COPIED" : "SHARE"}</button>
+              <button onClick={makeCard} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{cardBusy ? "DRAWING..." : "CARD"}</button>
               {SB && <button onClick={() => toggleFavSpot(spot)} style={{ fontFamily: F.mono, fontSize: 12, background: isFavSpot(spot.id) ? C.blazeSoft : "none", color: isFavSpot(spot.id) ? C.blaze : C.dim, border: `1px solid ${isFavSpot(spot.id) ? C.blaze : C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>{isFavSpot(spot.id) ? "\u2605 SAVED" : "\u2606 SAVE"}</button>}
+              {SB && <button onClick={openLog} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: C.moss, border: `1px solid ${C.moss}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>+ LOG A FISH</button>}
               {manual && <button onClick={() => setManual(false)} style={{ fontFamily: F.mono, fontSize: 12, background: "none", color: C.dim, border: `1px solid ${C.line}`, borderRadius: 8, padding: "7px 10px", cursor: "pointer" }}>BACK TO BEST</button>}
             </div>
+            {SB && iso(date) === iso(today) && (() => { const gk = spot.id + "|" + iso(today); const gv = graded[gk]; return (
+              <div style={{ marginTop: 11, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, letterSpacing: 0.8 }}>{gv != null ? "GRADED " + GRADES[gv] + ". THANKS, IT SHARPENS THE ENGINE." : "FISHED IT TODAY? GRADE THE CALL:"}</div>
+                {gv == null && GRADES.map((gl, gi) => (
+                  <button key={gi} onClick={() => sendGrade(gi)} style={{ fontFamily: F.mono, fontSize: 10.5, background: "none", color: C.stone, border: `1px solid ${C.line}`, borderRadius: 7, padding: "5px 8px", cursor: "pointer" }}>{gl}</button>
+                ))}
+              </div>
+            ); })()}
           </div>
         )}
 
@@ -2591,6 +2824,28 @@ function App() {
               style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
             <button onClick={sendMagicLink} style={{ width: "100%", marginTop: 8, background: "none", border: `1px solid ${C.moss}`, color: C.moss, borderRadius: 10, padding: "11px 12px", fontFamily: F.mono, fontSize: 11.5, letterSpacing: 1, cursor: "pointer" }}>EMAIL ME A SIGN IN LINK</button>
             {authMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone, marginTop: 10, lineHeight: 1.5 }}>{authMsg}</div>}
+          </div>
+        </div>
+      )}
+
+      {SB && logOpen && (
+        <div onClick={() => setLogOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(10,13,14,.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 360, background: C.panel2, border: `1px solid ${C.line}`, borderRadius: 16, padding: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ ...h, fontSize: 22 }}>LOG A FISH</div>
+              <button onClick={() => setLogOpen(false)} style={{ background: "none", border: "none", color: C.dim, fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 4 }}>×</button>
+            </div>
+            <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, margin: "4px 0 12px", letterSpacing: 0.6 }}>{spot.name.toUpperCase()} · TIDE, WIND, TEMP, MOON, AND THE SCORE SAVE WITH IT</div>
+            <select value={logForm.species} onChange={(e) => setLogForm({ ...logForm, species: e.target.value })}
+              style={{ width: "100%", background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 10px", fontFamily: F.body, fontSize: 15, outline: "none" }}>
+              {Object.keys(spot.sp).filter((k) => spot.sp[k] > 0).map((k) => <option key={k} value={k}>{SPX[k].name}</option>)}
+            </select>
+            <input value={logForm.len} onChange={(e) => setLogForm({ ...logForm, len: e.target.value })} placeholder="Length in inches (optional)" inputMode="decimal"
+              style={{ width: "100%", marginTop: 8, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
+            <input value={logForm.fly} onChange={(e) => setLogForm({ ...logForm, fly: e.target.value })} onKeyDown={(e) => e.key === "Enter" && saveCatch()} placeholder="Fly (optional)"
+              style={{ width: "100%", marginTop: 8, background: C.ink, border: `1px solid ${C.line}`, color: C.bone, borderRadius: 10, padding: "12px 12px", outline: "none", fontFamily: F.body }} />
+            <button onClick={saveCatch} style={{ width: "100%", marginTop: 12, background: C.blaze, color: C.ink, border: "none", borderRadius: 10, padding: "12px", fontFamily: F.disp, fontWeight: 700, fontSize: 16, letterSpacing: 0.5, cursor: "pointer" }}>LOG IT</button>
+            {logMsg && <div style={{ fontFamily: F.mono, fontSize: 11, color: logMsg.startsWith("Logged") ? C.ok : C.stone, marginTop: 10 }}>{logMsg}</div>}
           </div>
         </div>
       )}
