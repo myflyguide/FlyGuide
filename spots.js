@@ -232,6 +232,7 @@ g.FG_KB = {
     { k: ["confidence", "accuracy", "how accurate", "probability"], a: "Every day on the 30-day board carries a confidence number. Tides are astronomy, they are basically locked a year out. Weather is real forecast out to about 16 days and climatology after that. So day 3 might read 88 percent and day 26 reads 40, which means treat it as a lean, not a promise. Recheck inside a week, the board updates itself every time you open it." },
     { k: ["mullet run"], a: "September into October, the fall mullet run pours down the Florida Atlantic coast and every predator with a pulse follows it: snook in the trough, tarpon crashing pods, big jacks. Beach at dawn, big white baitfish fly or a Gurgler, cast parallel and hang on. It is the best month of shore fishing in the state." },
     { k: ["tailing", "tailer", "flood tide"], a: "Tailing fish are feeding fish with their heads down and guards down. Reds tail on flood tides over spartina grass, Jacksonville through the Lowcountry, biggest tides of August through October. Bones tail on early incoming across soft flats. Lead them 2 to 3 feet, land it soft, move it only when they can see it, and do not cast at the tail, the dinner end is the other end." },
+    { k: ["charleston", "flood tide", "lowcountry", "spring tide"], a: "Charleston runs on tide height, not just tide stage. When the predicted high at the Charleston Harbor station tops about 5.7 feet, the water climbs into the short spartina and the flood tide tailing game fires: Copahee, the ACE, the flats behind Capers. Below that number the grass never floods, so fish the oyster points on the last of the ebb instead. September and October add the jetty bulls outside the harbor. The app gates flood-flat scores on tide height, so a low score on a flood spot usually means the grass stays dry that day, not that the fish left." },
     { k: ["hurricane", "storm", "front"], a: "Two days before a front can be the best fishing of the month, the fish feel it and feed. The day it passes, stay home and tie flies. Bahamas and Florida June through November is hurricane season: the app will score it, but watch the tropics yourself, no score is worth a boat on your rental car." }
   ]
 };
@@ -1402,7 +1403,7 @@ g.FG_SPOTS = [
   /* ================= LOWCOUNTRY SC & GA ================= */
   { id: "copahee", c: "lc", reg: "Charleston", name: "Copahee Sound Flood Flats", area: "Mount Pleasant SC",
     lat: 32.8560, lng: -79.7620, sp: { redfish: 1 }, water: "marsh", sight: true,
-    station: "8665530", stName: "Charleston SC", lag: 25, tidePref: "incoming", expo: 90,
+    station: "8665530", stName: "Charleston SC", lag: 25, tidePref: "incoming", expo: 90, minHi: 5.7,
     access: { v: "Boat or kayak", n: "Launch at Garris Landing off Bulls Island Rd, free public ramp. The sound is a maze of oyster and spartina, run at half tide or better and idle the flats. Tide runs behind Charleston Harbor, corrected here." },
     wade: { r: "No", best: "high", n: "Pluff mud will take you to the waist. Stake the skiff or kayak at the grass edge on the flood and fish from there, firm shell rakes only if you must step out." },
     boat: { ramps: [{ n: "Garris Landing", la: 32.9330, lo: -79.6570 }], drops: [{ n: "Copahee grass flats", la: 32.8560, lo: -79.7620, note: "On 5.6ft-plus Charleston tides, pole into the short spartina the last 90 minutes of flood and hunt tails." }] },
@@ -1462,7 +1463,7 @@ g.FG_SPOTS = [
 
   { id: "ace-basin", c: "lc", reg: "Charleston", name: "ACE Basin & Edisto", area: "Edisto Beach SC",
     lat: 32.4930, lng: -80.3320, sp: { redfish: 1, tarpon: 0.3 }, water: "marsh", sight: true,
-    station: "8665530", stName: "Charleston SC", lag: 35, tidePref: "incoming", expo: 150,
+    station: "8665530", stName: "Charleston SC", lag: 35, tidePref: "incoming", expo: 150, minHi: 5.7,
     access: { v: "Public ramps", n: "Live Oak Landing at Edisto and the Bennetts Point landing put you into the Ashepoo-Combahee-Edisto wilderness. Cell service dies in here, tell someone your plan. Tides are corrected estimates off Charleston." },
     wade: { r: "No", best: "high", n: "Pluff mud country, all of it. This is skiff and kayak water, stake at the grass and fish from the boat." },
     boat: { ramps: [{ n: "Live Oak Landing, Edisto", la: 32.4960, lo: -80.3220 }], drops: [{ n: "St Pierre flood flats", la: 32.5200, lo: -80.3800, note: "Big-tide evenings, pole the short grass north of the creek and hunt tails, you will likely be alone." }] },
@@ -1477,7 +1478,7 @@ g.FG_SPOTS = [
 
   { id: "port-royal", c: "lc", reg: "Beaufort SC", name: "Port Royal Sound Flats", area: "Beaufort SC",
     lat: 32.3220, lng: -80.6480, sp: { redfish: 1, tarpon: 0.5 }, water: "flat", sight: true,
-    station: "8665530", stName: "Charleston SC", lag: 20, tidePref: "incoming", expo: 130,
+    station: "8665530", stName: "Charleston SC", lag: 20, tidePref: "incoming", expo: 130, minHi: 5.7,
     access: { v: "Public ramps", n: "Broad River landing under the bridge and the Station Creek landing on St Helena. Tide times here are estimates off Charleston, the sound runs its own book, verify the first trip." },
     wade: { r: "Limited", best: "low", n: "Firm sand edges near Station Creek and the front beaches wade at low. Interior marsh is mud, stake and fish." },
     boat: { ramps: [{ n: "Broad River landing", la: 32.4180, lo: -80.6740 }, { n: "Station Creek landing", la: 32.3380, lo: -80.5540 }], drops: [{ n: "Bay Point flats", la: 32.2600, lo: -80.6100, note: "Summer tarpon roll the sound edge on the flood, and fall bull reds stage the same water. Big fish country." }] },
@@ -1492,7 +1493,7 @@ g.FG_SPOTS = [
 
   { id: "hilton-head", c: "lc", reg: "Beaufort SC", name: "Hilton Head & Calibogue Sound", area: "Hilton Head SC",
     lat: 32.1720, lng: -80.7820, sp: { redfish: 1, tarpon: 0.4 }, water: "marsh", sight: true,
-    station: "8665530", stName: "Charleston SC", lag: 25, tidePref: "incoming", expo: 200,
+    station: "8665530", stName: "Charleston SC", lag: 25, tidePref: "incoming", expo: 200, minHi: 5.7,
     access: { v: "Public", n: "C.C. Haigh Jr landing on the island's north end beside Pinckney Island NWR, free ramp. Kayaks launch the same water and the refuge creeks are paddle-perfect." },
     wade: { r: "No", best: "high", n: "Mud everywhere that is not oyster. Fish from the boat, and give the oyster rakes respect, they eat hulls and shins alike." },
     boat: { ramps: [{ n: "C.C. Haigh Jr landing", la: 32.2410, lo: -80.7480 }], drops: [{ n: "Pinckney Island grass flats", la: 32.2380, lo: -80.7800, note: "Refuge flood flats tail reliably on the big evenings, minutes from the ramp." }] },
@@ -1507,7 +1508,7 @@ g.FG_SPOTS = [
 
   { id: "wassaw", c: "lc", reg: "Savannah GA", name: "Wassaw Sound & Savannah Backwaters", area: "Savannah GA",
     lat: 31.9350, lng: -80.9550, sp: { redfish: 1, tarpon: 0.5 }, water: "marsh", sight: true,
-    station: "8670870", stName: "Fort Pulaski GA", lag: 10, tidePref: "incoming", expo: 120,
+    station: "8670870", stName: "Fort Pulaski GA", lag: 10, tidePref: "incoming", expo: 120, minHi: 8.0,
     access: { v: "Public ramps", n: "Lazaretto Creek landing at Tybee and the Skidaway Narrows ramp. Georgia's 7 to 9 foot tides move serious water, plan runs around the mid-tide rips." },
     wade: { r: "No", best: "high", n: "Georgia mud is legendary and not in a good way. Boat and kayak fishery, full stop." },
     boat: { ramps: [{ n: "Lazaretto Creek landing", la: 32.0230, lo: -80.8940 }, { n: "Skidaway Narrows ramp", la: 31.9330, lo: -81.0470 }], drops: [{ n: "Wassaw Island back flats", la: 31.9100, lo: -80.9800, note: "Flood tails behind the barrier island, and summer tarpon rolling the sound on the menhaden." }] },
@@ -1567,7 +1568,7 @@ g.FG_SPOTS = [
 
   { id: "winyah", c: "lc", reg: "Georgetown SC", name: "Winyah Bay & North Inlet", area: "Georgetown SC",
     lat: 33.2320, lng: -79.1800, sp: { redfish: 1, tarpon: 0.3 }, water: "marsh", sight: true,
-    station: "8665530", stName: "Charleston SC", lag: -20, tidePref: "incoming", expo: 110,
+    station: "8665530", stName: "Charleston SC", lag: -20, tidePref: "incoming", expo: 110, minHi: 5.7,
     access: { v: "Public ramps", n: "East Bay landing in Georgetown and the South Island Ferry landing. North Inlet is pristine research-reserve marsh, treat it that way. Tides are estimates off Charleston, running a touch earlier." },
     wade: { r: "No", best: "high", n: "Mud and more mud. Boat and kayak, stake at the grass." },
     boat: { ramps: [{ n: "East Bay landing, Georgetown", la: 33.3590, lo: -79.2810 }], drops: [{ n: "North Inlet flood flats", la: 33.3300, lo: -79.1900, note: "Reserve marsh tails beautifully on the big evenings and sees a fraction of Charleston's pressure." }] },
@@ -1579,6 +1580,51 @@ g.FG_SPOTS = [
       prime: "September and October run the table: tails inside, bulls at the jetties, all on the same tank.",
       blowout: "The bay chops up fast. The Sampit and Black River bends behind Georgetown stay calm."
     }, al: ["winyah", "georgetown", "north inlet"] },
+
+  { id: "charleston-harbor", c: "lc", reg: "Charleston", name: "Charleston Harbor & the Jetties", area: "Charleston SC",
+    lat: 32.7520, lng: -79.8680, sp: { redfish: 1, tarpon: 0.3 }, water: "current", sight: false,
+    station: "8665530", stName: "Charleston SC", lag: 0, tidePref: "moving", expo: 140,
+    access: { v: "Public ramps", n: "Remleys Point public ramp under the Ravenel bridge, plus Shem Creek paddle launches. The jetties are a four mile run outside the harbor, pick your weather day. The tide station is here, times are exact." },
+    wade: { r: "No", best: "any", n: "Harbor fishery from boat and kayak. The Battery and Fort Moultrie seawalls give the walking angler casting perches at dawn before traffic." },
+    boat: { ramps: [{ n: "Remleys Point ramp", la: 32.8050, lo: -79.8990 }], drops: [{ n: "The Jetties", la: 32.7450, lo: -79.8000, note: "September through November the biggest reds in the state stack the rocks. Ocean side seams on the outgoing, heavy tips, hold on." }, { n: "Crab Bank edges", la: 32.7880, lo: -79.8780, note: "Slot fish on the grass and shell near the seabird sanctuary, honor the posted setback." }] },
+    bait: "Menhaden pods in the harbor, shrimp flushing Shem Creek and the Wando every ebb, mullet along the seawalls in fall.",
+    brief: {
+      read: "The city's front porch. Slot reds work the harbor grass edges all year, and every fall the bull redfish of legend pile onto the jetty rocks where the shipping channel meets the sea.",
+      cast: "Inside, fish the shell points on the last of the ebb, the standard creek drill with a skyline. At the jetties, count a 350 grain down the rock seam on the outgoing and strip long, the bulls hold deep and hit like trucks.",
+      gear: "8wt for the harbor slots. The jetty game is a 10wt, 350 to 450 grain, 20lb tippet, and big EP menhaden flies.",
+      prime: "September through November for the jetty bulls on moving tides. Harbor slots year-round at first light.",
+      blowout: "Ocean swell turns the jetties into a washing machine, stand down. The Wando and Cooper grass edges fish the same tide inside."
+    }, al: ["charleston harbor", "jetties", "crab bank", "remleys"] },
+
+  { id: "capers", c: "lc", reg: "Charleston", name: "Capers & Dewees Islands", area: "Isle of Palms SC",
+    lat: 32.8550, lng: -79.7000, sp: { redfish: 1 }, water: "beach", sight: true,
+    station: "8665530", stName: "Charleston SC", lag: 10, tidePref: "incoming", expo: 140, minHi: 5.7,
+    access: { v: "Boat only", n: "Short hops from Garris Landing or the Isle of Palms marina. Capers is a state heritage preserve, day use only, pack out everything including the memory of your trash." },
+    wade: { r: "Easy on the front", best: "low", n: "The boneyard beach wades hard sand. The fallen oaks eat fly lines, mind the backcast. Behind the island is mud, stake and fish." },
+    boat: { ramps: [{ n: "Garris Landing", la: 32.9330, lo: -79.6570 }], drops: [{ n: "Capers Inlet flats", la: 32.8600, lo: -79.7030, note: "Flood tails in the short grass behind the island, ebb fish on the inlet bars, all in one anchorage." }] },
+    bait: "Finger mullet in the trough, fiddlers on the flood flats behind, shrimp in Capers Creek.",
+    brief: {
+      read: "Two wild barrier islands twenty minutes from downtown. Boneyard beach sight fishing on the front, flood tails behind, and not one house watching you do it.",
+      cast: "Walk the front beach at low with the sun up and hunt cruisers weaving the fallen oaks. On the big evening floods, slide behind the island and play the tailing game.",
+      gear: "8wt floating, weedless crab flies and small mullet patterns, 16lb, and studier flip flops than you planned.",
+      prime: "Low incoming mornings on the beach, spring-tide evening floods behind, April through November.",
+      blowout: "East swell trashes the front. The creeks behind Dewees stay calm and hold the same class of fish."
+    }, al: ["capers", "dewees", "boneyard"] },
+
+  { id: "breach-inlet", c: "lc", reg: "Charleston", name: "Breach Inlet & Sullivans Island", area: "Sullivans Island SC",
+    lat: 32.7770, lng: -79.8180, sp: { redfish: 1 }, water: "inlet", sight: true,
+    station: "8665530", stName: "Charleston SC", lag: 0, tidePref: "outgoing", expo: 160,
+    access: { v: "Walk-on, free", n: "Small free lots at Breach Inlet on both the Sullivans and Isle of Palms sides, plus the Sullivans beach paths. The one true no-boat spot in the Charleston lineup." },
+    wade: { r: "Beach only, strict", best: "low", n: "Beach sand is fine. The inlet itself is never fine, this current has drowned strong swimmers and it is posted for a reason. Fish from the sand and the rocks, period." },
+    boat: { ramps: [], drops: [] },
+    bait: "Shrimp and finger mullet flushing the inlet every ebb, glass minnows in the beach trough, big mullet schools in fall.",
+    brief: {
+      read: "The walking angler's Charleston. A violent little inlet flanked by friendly beaches, reds riding the ebb seams and cruising the troughs, all of it reachable in flip flops from a free parking spot.",
+      cast: "Dawn, fish the ebb seams from the Isle of Palms side sand, swinging shrimp patterns through the flow. Sun up, walk the Sullivans trough and sight-cast the cruisers at your feet.",
+      gear: "8wt, intermediate for the seams, floating for the trough walk, shrimp flies and small white baitfish #2 to #4.",
+      prime: "Outgoing tide meeting first light, April through November. The fall mullet mornings are the peak.",
+      blowout: "Swell shuts the front beach down. The Fort Moultrie seawall stretch on the harbor side fishes the lee."
+    }, al: ["breach inlet", "sullivans", "isle of palms"] },
 
   /* ================= EXPANSION: FLORIDA ================= */
   { id: "steinhatchee", c: "fl", reg: "Big Bend", name: "Steinhatchee & the Big Bend", area: "Steinhatchee FL",
