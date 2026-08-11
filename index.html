@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="spots.js?v=25"></script>
+<script src="spots.js?v=28"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
   #root { overflow-x: clip; }
@@ -71,6 +71,13 @@ const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDOR
 const RIVERS = CORR.flatMap((c) => (c.rivers || []));
 const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 const GRADES = ["SKUNKED", "SLOW", "DECENT", "LIGHTS OUT"];
+const winTxt = (d) => {
+  if (!d || !d.windows || !d.windows.length || !d.hourly) return "";
+  const scoreOf = (w) => Math.max(...d.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
+  const best = [...d.windows].sort((x, y) => scoreOf(y) - scoreOf(x))[0];
+  const f = (h) => (h % 12 === 0 ? 12 : h % 12) + (h >= 12 ? "p" : "a");
+  return f(best[0]) + " to " + f(best[1] + 1);
+};
 const wrapText = (x, text, tx, ty, maxW, lh) => {
   const words = String(text).split(" "); let line = "", yy = ty;
   words.forEach((w) => { const t = line ? line + " " + w : w; if (x.measureText(t).width > maxW && line) { x.fillText(line, tx, yy); line = w; yy += lh; } else line = t; });
@@ -715,7 +722,7 @@ function App() {
   }, [tides, wx, sst, mode]);
   const yourWater = useMemo(() => favSpotIds
     .map((id) => SPOTS.find((s) => s.id === id)).filter(Boolean)
-    .map((s) => { const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0]; const d = computeDay(s, k, today, ctxFor(today, s)); return { s, k, peak: d.peak }; })
+    .map((s) => { const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0]; const d = computeDay(s, k, today, ctxFor(today, s)); return { s, k, peak: d.peak, win: winTxt(d) }; })
     .sort((a, b) => b.peak - a.peak), [favs, tides, wx, sst, mode]);
   const homePins = useMemo(() => SPOTS.map((s) => {
     const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
@@ -836,7 +843,7 @@ function App() {
     for (let i = 0; i < 30; i++) {
       const dd = addDays(today, i);
       const m = computeDay(spot, sp, dd, ctxFor(dd, spot));
-      out.push({ date: dd, peak: m.peak, conf: confidence(i, spot) });
+      out.push({ date: dd, peak: m.peak, windows: m.windows, hourly: m.hourly, conf: confidence(i, spot) });
     }
     return out;
   }, [spot.id, sp, mode, tides, wx, sst]);
@@ -982,7 +989,7 @@ function App() {
       const nights = Math.max(1, Math.min(plan.nights, 30 - off0));
       const cand = nearestSpots(g.la, g.lo, 24).filter((x) => x.mi <= 120)
         .filter(({ s }) => plan.sp === "any" ? true : (s.sp[plan.sp] || 0) > 0).slice(0, 8);
-      if (!cand.length) { setPlanMsg("No covered water within 120 miles of there" + (plan.sp !== "any" ? " holding " + SPX[plan.sp].short.toLowerCase() + "s" : "") + ". Corridors so far: Northeast, Florida, Bahamas."); setPlanBusy(false); return; }
+      if (!cand.length) { setPlanMsg("No covered water within 120 miles of there" + (plan.sp !== "any" ? " holding " + SPX[plan.sp].short.toLowerCase() + "s" : "") + ". Corridors so far: Northeast, Lowcountry, Florida, Bahamas."); setPlanBusy(false); return; }
       cand.forEach(({ s }) => fetchStation(s.station));
       setPlanReq({ label: g.label, startD, off0, nights, cand });
     } catch (e) { setPlanMsg("Planner hit a snag. Try again."); setPlanBusy(false); }
@@ -998,7 +1005,7 @@ function App() {
         cand.forEach(({ s, mi }) => {
           const k = plan.sp !== "any" && (s.sp[plan.sp] || 0) > 0 ? plan.sp : Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
           const d = computeDay(s, k, dd, ctxFor(dd, s));
-          if (!bestR || d.peak > bestR.peak) bestR = { date: dd, s, k, mi, peak: d.peak, conf: confidence(off0 + i, s) };
+          if (!bestR || d.peak > bestR.peak) bestR = { date: dd, s, k, mi, peak: d.peak, win: winTxt(d), conf: confidence(off0 + i, s) };
         });
         if (bestR) rows.push(bestR);
       }
@@ -1199,11 +1206,11 @@ function App() {
                     ))}
                   </div>
                 )}
-                {yourWater.map(({ s, k, peak }) => (
+                {yourWater.map(({ s, k, peak, win }) => (
                   <button key={s.id} onClick={() => jumpToSpot(s)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: C.tile, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{"\u2605"} {s.name}</div>
-                      <div style={{ color: C.dim, fontSize: 12 }}>{s.area} · {SPX[k].short}</div>
+                      <div style={{ color: C.dim, fontSize: 12 }}>{s.area} · {SPX[k].short}{win ? " · bite " + win : ""}</div>
                     </div>
                     <div style={{ ...h, fontSize: 21, lineHeight: 1, color: peak >= 70 ? C.blaze : peak >= 50 ? C.stone : C.dim }}>{to10(peak)}<span style={{ fontSize: 11, color: C.dim }}>/10</span></div>
                   </button>
@@ -1280,7 +1287,7 @@ function App() {
                     <button key={i} onClick={() => jumpToPlan(r)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", textAlign: "left", background: i === planRes.top ? C.panel2 : C.tile, border: `1px solid ${i === planRes.top ? C.blaze : C.line}`, borderRadius: 10, padding: "9px 11px", marginBottom: 6, color: C.bone, cursor: "pointer" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: 13.5 }}>{i === planRes.top ? "BEST · " : ""}{DOW[r.date.getDay()]} {r.date.getMonth() + 1}/{r.date.getDate()} · {r.s.name}</div>
-                        <div style={{ color: C.dim, fontSize: 11.5 }}>{SPX[r.k].short} · {Math.round(r.mi)} mi out · {confLabel(r.conf).toLowerCase()} {r.conf}%</div>
+                        <div style={{ color: C.dim, fontSize: 11.5 }}>{SPX[r.k].short} · {Math.round(r.mi)} mi out · {confLabel(r.conf).toLowerCase()} {r.conf}%{r.win ? " · bite " + r.win : ""}</div>
                       </div>
                       <div style={{ ...h, fontSize: 20, lineHeight: 1, color: r.peak >= 70 ? C.blaze : r.peak >= 50 ? C.stone : C.dim, flexShrink: 0, marginLeft: 8 }}>{to10(r.peak)}<span style={{ fontSize: 10.5, color: C.dim }}>/10</span></div>
                     </button>
@@ -1320,7 +1327,7 @@ function App() {
                   </div>
                   <div style={{ textAlign: "right", minWidth: 52 }}>
                     <div style={{ ...h, fontSize: 21, lineHeight: 1, color: n && n.peak >= 70 ? C.blaze : n && n.peak >= 50 ? C.stone : C.dim }}>{n ? to10(n.peak) : ""}<span style={{ fontSize: 11, color: C.dim }}>/10</span></div>
-                    <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 2 }}>{Math.round(mi)} mi</div>
+                    <div style={{ fontFamily: F.mono, fontSize: 10.5, color: C.dim, marginTop: 2 }}>{Math.round(mi)} mi{n && winTxt(n) ? " · " + winTxt(n) : ""}</div>
                   </div>
                 </button>
               );
@@ -1408,9 +1415,10 @@ function App() {
                   style={{ flexShrink: 0, width: 56, background: sel ? C.panel2 : "transparent", border: `1px solid ${sel ? C.blaze : best ? C.moss : C.line}`, borderRadius: 10, padding: "7px 4px 6px", cursor: "pointer" }}>
                   <div style={{ fontFamily: F.mono, fontSize: 9.5, color: best ? C.moss : C.dim }}>{best ? "BEST" : DOW[b.date.getDay()].toUpperCase()}</div>
                   <div style={{ fontFamily: F.mono, fontSize: 11, color: C.stone }}>{b.date.getMonth() + 1}/{b.date.getDate()}</div>
-                  <div style={{ height: 26, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "4px 0 3px" }}>
+                  <div style={{ height: 26, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "4px 0 2px" }}>
                     <div style={{ width: 16, height: Math.max(3, b.peak / 100 * 26), background: b.peak >= 70 ? C.blaze : b.peak >= 50 ? C.moss : C.line, borderRadius: 3 }} />
                   </div>
+                  <div style={{ fontFamily: F.mono, fontSize: 8, color: b.peak >= 70 ? C.blaze : C.dim, letterSpacing: 0.2, whiteSpace: "nowrap", overflow: "hidden", minHeight: 10 }}>{winTxt(b).replace(" to ", "-")}</div>
                   <div style={{ fontFamily: F.disp, fontWeight: 700, fontSize: 15, color: b.peak >= 70 ? C.blaze : C.stone }}>{to10(b.peak)}</div>
                   <div style={{ fontFamily: F.mono, fontSize: 9, color: b.conf >= 70 ? C.ok : C.dim }}>{b.conf}%</div>
                 </button>
