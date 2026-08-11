@@ -71,6 +71,7 @@ const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDOR
 const RIVERS = CORR.flatMap((c) => (c.rivers || []));
 const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 const GRADES = ["SKUNKED", "SLOW", "DECENT", "LIGHTS OUT"];
+const REGION_BUOY = { "NH Seacoast": "IOSN3", "Maine": "44007", "North Shore MA": "44013", "Boston Harbor": "44013", "South Shore MA": "44013", "Cape Cod": "44090", "Cape & Islands": "44020", "South Coast MA": "BUZM3", "Rhode Island": "44097", "Connecticut": "44039", "Long Island NY": "44025", "New York City": "44065", "New Jersey": "44091", "Upper Keys": "MLRF1", "Middle Keys": "SMKF1", "Lower Keys": "SANF1", "Miami": "FWYF1", "Southwest FL": "NPSF1", "Southeast FL": "LKWF1", "Forgotten Coast": "APCF1", "Nature Coast": "CDRF1", "Big Bend": "CDRF1", "Grand Bahama": "SPGF1" };
 const SPP = (k) => { const n = SPX[k].short.toLowerCase(); return (k === "striper" || k === "albie") ? n + "s" : n; };
 const bestStretch = (d) => {
   if (!d || !d.hourly || !d.hourly.length) return null;
@@ -684,6 +685,48 @@ function App() {
     return () => { alive = false; };
   }, [cid]);
 
+  /* live water temp for the current spot: station sensor, buoy, satellite, in that order */
+  const [sstLive, setSstLive] = useState(null);
+  useEffect(() => {
+    if (sstLive && sstLive.key === spot.id) return;
+    let alive = true;
+    const set = (v, src) => { if (alive && isFinite(v) && v > 28 && v < 105) setSstLive({ key: spot.id, v: Math.round(v), src }); };
+    (async () => {
+      try {
+        if (spot.station) {
+          const r = await fetch(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=flyguide&station=${spot.station}&date=latest&units=english&time_zone=lst_ldt&format=json`);
+          const j = await r.json();
+          const v = j.data && j.data[0] && parseFloat(j.data[0].v);
+          if (isFinite(v) && v > 28) { set(v, "NOAA " + (spot.stName || "station") + " sensor"); return; }
+        }
+      } catch (e) {}
+      try {
+        const b = REGION_BUOY[spot.reg];
+        if (b) {
+          const r = await fetch(`https://www.ndbc.noaa.gov/data/realtime2/${b}.txt`);
+          const txt = await r.text();
+          const lines = txt.trim().split("\n");
+          const cols = lines[0].replace(/^#/, "").trim().split(/\s+/);
+          const wi = cols.indexOf("WTMP");
+          if (wi >= 0) {
+            for (let i = 2; i < Math.min(lines.length, 14); i++) {
+              const p = lines[i].trim().split(/\s+/);
+              const c = parseFloat(p[wi]);
+              if (isFinite(c) && c > -3 && c < 40) { set(c * 9 / 5 + 32, "buoy " + b); return; }
+            }
+          }
+        }
+      } catch (e) {}
+      try {
+        const r = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${spot.lat}&longitude=${spot.lng}&hourly=sea_surface_temperature&temperature_unit=fahrenheit&forecast_days=1`);
+        const j = await r.json();
+        const arr = (j.hourly && j.hourly.sea_surface_temperature) || [];
+        for (let i = arr.length - 1; i >= 0; i--) { if (arr[i] != null) { set(arr[i], "satellite at the spot"); return; } }
+      } catch (e) {}
+    })();
+    return () => { alive = false; };
+  }, [spot.id]);
+
   /* sst per corridor */
   useEffect(() => {
     if (sst[cid]) return;
@@ -707,7 +750,12 @@ function App() {
     const W = wx[s.c] || {};
     const events = s.station ? tides[s.station] : tides["bah:" + s.id];
     const shifted = events && s.lag ? events.map((e) => ({ ...e, date: new Date(e.date.getTime() + s.lag * 60000) })) : events;
-    const sstV = (sst[s.c] && sst[s.c][key] != null) ? sst[s.c][key] : Math.round(lerpArr(sc.sstFallback, dd));
+    let sstV = (sst[s.c] && sst[s.c][key] != null) ? sst[s.c][key] : Math.round(lerpArr(sc.sstFallback, dd));
+    if (sstLive && sstLive.key === s.id) {
+      const tKey = iso(today);
+      const baseToday = (sst[s.c] && sst[s.c][tKey] != null) ? sst[s.c][tKey] : Math.round(lerpArr(sc.sstFallback, today));
+      sstV += (sstLive.v - sstOffFor(s, today)) - baseToday;
+    }
     return {
       events: shifted || null,
       windByHour: (W.windByDate && W.windByDate[key]) || {},
@@ -821,8 +869,8 @@ function App() {
       x.fillText((iso(date) === iso(today) ? "TODAY, " : "") + date.toDateString().toUpperCase(), 72, 180);
       x.fillStyle = dm.peak >= 70 ? "#E8722A" : dm.peak >= 50 ? "#C9C2B0" : "#5A6468";
       x.textAlign = "right";
-      x.font = "800 290px Georgia, serif"; x.fillText(String(to10(dm.peak)), 1008, 420);
-      x.font = "26px Menlo, monospace"; x.fillText("OUT OF 10", 1008, 464);
+      x.font = "800 290px Georgia, serif"; x.fillText(String(to10(dm.peak)), 1008, 400);
+      x.font = "26px Menlo, monospace"; x.fillText("OUT OF 10", 1008, 505);
       x.textAlign = "left";
       x.fillStyle = "#EAE5D8"; x.font = "700 62px Georgia, serif";
       const endY = wrapText(x, spot.name, 72, 566, 620, 70);
@@ -1501,7 +1549,7 @@ function App() {
             })()}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
-                <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>WATER</div>
+                <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.dim }}>WATER · {(sstLive && sstLive.key === spot.id ? sstLive.src : "seasonal est").toUpperCase()}</div>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>{ctxToday.sst + sstOffFor(spot, date)}F {tempComfort(sp, ctxToday.sst + sstOffFor(spot, date)) >= 0.9 ? "· in the slot" : tempComfort(sp, ctxToday.sst + sstOffFor(spot, date)) >= 0.5 ? "· workable" : "· off"}</div>
               </div>
               <div style={{ background: C.tile, borderRadius: 10, padding: "9px 11px" }}>
