@@ -935,7 +935,7 @@ g.FG_SPOTS = [
 
   { id: "new-castle", c: "ne", reg: "NH Seacoast", name: "Piscataqua Mouth", area: "New Castle NH",
     lat: 43.0710, lng: -70.7110, sp: { striper: 1 }, water: "current", sight: false,
-    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "moving", expo: 70,
+    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "moving", expo: 70, sstOff: -2,
     access: { v: "Public, fee at Common", n: "Great Island Common (small fee) and Fort Stark give shore access to one of the fastest tidal rivers in the country. The tide station is literally here, times are exact." },
     wade: { r: "Bank only", best: "any", n: "Do not wade the Piscataqua. Fish from the rocks and beaches, the main current will not give you a second chance." },
     boat: { ramps: [{ n: "Pierce Island ramp, Portsmouth", la: 43.0740, lo: -70.7430 }], drops: [{ n: "Back channel eddies", la: 43.0680, lo: -70.7190, note: "Work the eddy lines and seams off the islands on the turns, not the max flow." }] },
@@ -1394,7 +1394,7 @@ g.FG_SPOTS = [
   { id: "pierce-island", c: "ne", reg: "NH Seacoast", name: "Pierce Island", area: "Portsmouth NH",
     lat: 43.0740, lng: -70.7420, sp: { striper: 1 }, water: "flat", sight: false,
     station: "8423898", stName: "Fort Point NH", lag: 10, tidePref: "incoming", expo: 60,
-    sstOff: 2,
+    sstOff: -3,
     access: { v: "Public, free", n: "City park at the end of Pierce Island Rd with a free lot and ramp, five minutes from downtown Portsmouth. The flat and the back channel are steps from the truck." },
     wade: { r: "Careful", best: "low", n: "The flat off the southeast corner wades on the lower half with careful feet. The edges drop into serious Piscataqua current, stay on the flat, never chase a fish off it." },
     boat: { ramps: [{ n: "Pierce Island ramp", la: 43.0740, lo: -70.7430 }], drops: [{ n: "Back channel seam", la: 43.0755, lo: -70.7390, note: "The eddy line between the island and the South End on the moving tide, small water, real fish." }] },

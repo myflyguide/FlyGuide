@@ -968,7 +968,7 @@ g.FG_SPOTS = [
 
   { id: "new-castle", c: "ne", reg: "NH Seacoast", name: "Piscataqua Mouth", area: "New Castle NH",
     lat: 43.0710, lng: -70.7110, sp: { striper: 1 }, water: "current", sight: false,
-    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "moving", expo: 70,
+    station: "8423898", stName: "Fort Point NH", lag: 0, tidePref: "moving", expo: 70, sstOff: -2,
     access: { v: "Public, fee at Common", n: "Great Island Common (small fee) and Fort Stark give shore access to one of the fastest tidal rivers in the country. The tide station is literally here, times are exact." },
     wade: { r: "Bank only", best: "any", n: "Do not wade the Piscataqua. Fish from the rocks and beaches, the main current will not give you a second chance." },
     boat: { ramps: [{ n: "Pierce Island ramp, Portsmouth", la: 43.0740, lo: -70.7430 }], drops: [{ n: "Back channel eddies", la: 43.0680, lo: -70.7190, note: "Work the eddy lines and seams off the islands on the turns, not the max flow." }] },
@@ -1427,7 +1427,7 @@ g.FG_SPOTS = [
   { id: "pierce-island", c: "ne", reg: "NH Seacoast", name: "Pierce Island", area: "Portsmouth NH",
     lat: 43.0740, lng: -70.7420, sp: { striper: 1 }, water: "flat", sight: false,
     station: "8423898", stName: "Fort Point NH", lag: 10, tidePref: "incoming", expo: 60,
-    sstOff: 2,
+    sstOff: -3,
     access: { v: "Public, free", n: "City park at the end of Pierce Island Rd with a free lot and ramp, five minutes from downtown Portsmouth. The flat and the back channel are steps from the truck." },
     wade: { r: "Careful", best: "low", n: "The flat off the southeast corner wades on the lower half with careful feet. The edges drop into serious Piscataqua current, stay on the flat, never chase a fish off it." },
     boat: { ramps: [{ n: "Pierce Island ramp", la: 43.0740, lo: -70.7430 }], drops: [{ n: "Back channel seam", la: 43.0755, lo: -70.7390, note: "The eddy line between the island and the South End on the moving tide, small water, real fish." }] },
@@ -3069,7 +3069,12 @@ function App() {
   useEffect(() => {
     if (sstLive && sstLive.key === spot.id) return;
     let alive = true;
-    const set = (v, src) => { if (alive && isFinite(v) && v > 28 && v < 105) setSstLive({ key: spot.id, v: Math.round(v), src }); };
+    const set = (v, src) => {
+      if (!alive || !isFinite(v) || v <= 28 || v >= 105) return;
+      const climo = Math.round(lerpArr(cor.sstFallback, today)) + sstOffFor(spot, today);
+      if (Math.abs(v - climo) > 15) return;
+      setSstLive({ key: spot.id, v: Math.round(v), src });
+    };
     (async () => {
       try {
         if (spot.station) {
@@ -3082,6 +3087,13 @@ function App() {
       try {
         const b = REGION_BUOY[spot.reg];
         if (b) {
+          try {
+            const r2 = await fetch(`https://coastwatch.pfeg.noaa.gov/erddap/tabledap/cwwcNDBCMet.json?time%2Cwtmp&station=%22${b}%22&time%3E=now-2days&orderByMax(%22time%22)`);
+            const j2 = await r2.json();
+            const row = j2.table && j2.table.rows && j2.table.rows[0];
+            const c2 = row && parseFloat(row[1]);
+            if (isFinite(c2) && c2 > -3 && c2 < 40) { set(c2 * 9 / 5 + 32, "buoy " + b); return; }
+          } catch (e) {}
           const r = await fetch(`https://www.ndbc.noaa.gov/data/realtime2/${b}.txt`);
           const txt = await r.text();
           const lines = txt.trim().split("\n");
@@ -3147,7 +3159,7 @@ function App() {
   };
 
   const dayModels = useMemo(() => spots.map((s) => ({ spot: s, ...computeDay(s, sp, date, ctxFor(date, s)) })),
-    [spots, sp, date, mode, tides, wx, sst]);
+    [spots, sp, date, mode, tides, wx, sst, sstLive]);
   const ranking = useMemo(() => [...dayModels].sort((a, b) => b.peak - a.peak), [dayModels]);
   const topId = ranking[0] ? ranking[0].spot.id : null;
   useEffect(() => { if (!manual && topId) setSpotId(topId); }, [topId, manual]);
@@ -3163,16 +3175,16 @@ function App() {
       if (best) out[k] = best;
     });
     return out;
-  }, [tides, wx, sst, mode]);
+  }, [tides, wx, sst, mode, sstLive]);
   const yourWater = useMemo(() => favSpotIds
     .map((id) => SPOTS.find((s) => s.id === id)).filter(Boolean)
     .map((s) => { const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0]; const d = computeDay(s, k, today, ctxFor(today, s)); return { s, k, peak: d.peak, win: winTxt(d) }; })
-    .sort((a, b) => b.peak - a.peak), [favs, tides, wx, sst, mode]);
+    .sort((a, b) => b.peak - a.peak), [favs, tides, wx, sst, mode, sstLive]);
   const homePins = useMemo(() => SPOTS.map((s) => {
     const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
     const d = computeDay(s, k, today, ctxFor(today, s));
     return { s, lat: s.lat, lng: s.lng, name: s.name, peak: d.peak };
-  }), [tides, wx, sst, mode]);
+  }), [tides, wx, sst, mode, sstLive]);
   const mapRef = useRef(null);
   const spotMapRef = useRef(null);
   useEffect(() => {
@@ -3280,7 +3292,7 @@ function App() {
       out[s.id] = k ? { k, ...computeDay(s, k, today, ctxFor(today, s)) } : null;
     });
     return out;
-  }, [nearby, sp, mode, tides, wx, sst]);
+  }, [nearby, sp, mode, tides, wx, sst, sstLive]);
 
   const board = useMemo(() => {
     const out = [];
@@ -3290,7 +3302,7 @@ function App() {
       out.push({ date: dd, peak: m.peak, windows: m.windows, hourly: m.hourly, conf: confidence(i, spot) });
     }
     return out;
-  }, [spot.id, sp, mode, tides, wx, sst]);
+  }, [spot.id, sp, mode, tides, wx, sst, sstLive]);
 
   const ctxToday = ctxFor(date, spot);
   const tsNow = tideStateAt(ctxToday.events, date.getTime() === today.getTime() ? now : new Date(new Date(date).setHours(12)));
@@ -3466,7 +3478,7 @@ function App() {
       setPlanRes({ label, rows, top }); setPlanBusy(false); setPlanReq(null);
     }, 700);
     return () => clearTimeout(timer);
-  }, [planReq, tides]);
+  }, [planReq, tides, sstLive]);
   const jumpToPlan = (r) => { jumpToSpot(r.s); setDate(r.date); };
   const pickPlace = (g) => {
     setQ("");

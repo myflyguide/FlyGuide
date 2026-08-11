@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="spots.js?v=31"></script>
+<script src="spots.js?v=32"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
   #root { overflow-x: clip; }
@@ -690,7 +690,12 @@ function App() {
   useEffect(() => {
     if (sstLive && sstLive.key === spot.id) return;
     let alive = true;
-    const set = (v, src) => { if (alive && isFinite(v) && v > 28 && v < 105) setSstLive({ key: spot.id, v: Math.round(v), src }); };
+    const set = (v, src) => {
+      if (!alive || !isFinite(v) || v <= 28 || v >= 105) return;
+      const climo = Math.round(lerpArr(cor.sstFallback, today)) + sstOffFor(spot, today);
+      if (Math.abs(v - climo) > 15) return;
+      setSstLive({ key: spot.id, v: Math.round(v), src });
+    };
     (async () => {
       try {
         if (spot.station) {
@@ -703,6 +708,13 @@ function App() {
       try {
         const b = REGION_BUOY[spot.reg];
         if (b) {
+          try {
+            const r2 = await fetch(`https://coastwatch.pfeg.noaa.gov/erddap/tabledap/cwwcNDBCMet.json?time%2Cwtmp&station=%22${b}%22&time%3E=now-2days&orderByMax(%22time%22)`);
+            const j2 = await r2.json();
+            const row = j2.table && j2.table.rows && j2.table.rows[0];
+            const c2 = row && parseFloat(row[1]);
+            if (isFinite(c2) && c2 > -3 && c2 < 40) { set(c2 * 9 / 5 + 32, "buoy " + b); return; }
+          } catch (e) {}
           const r = await fetch(`https://www.ndbc.noaa.gov/data/realtime2/${b}.txt`);
           const txt = await r.text();
           const lines = txt.trim().split("\n");
@@ -768,7 +780,7 @@ function App() {
   };
 
   const dayModels = useMemo(() => spots.map((s) => ({ spot: s, ...computeDay(s, sp, date, ctxFor(date, s)) })),
-    [spots, sp, date, mode, tides, wx, sst]);
+    [spots, sp, date, mode, tides, wx, sst, sstLive]);
   const ranking = useMemo(() => [...dayModels].sort((a, b) => b.peak - a.peak), [dayModels]);
   const topId = ranking[0] ? ranking[0].spot.id : null;
   useEffect(() => { if (!manual && topId) setSpotId(topId); }, [topId, manual]);
@@ -784,16 +796,16 @@ function App() {
       if (best) out[k] = best;
     });
     return out;
-  }, [tides, wx, sst, mode]);
+  }, [tides, wx, sst, mode, sstLive]);
   const yourWater = useMemo(() => favSpotIds
     .map((id) => SPOTS.find((s) => s.id === id)).filter(Boolean)
     .map((s) => { const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0]; const d = computeDay(s, k, today, ctxFor(today, s)); return { s, k, peak: d.peak, win: winTxt(d) }; })
-    .sort((a, b) => b.peak - a.peak), [favs, tides, wx, sst, mode]);
+    .sort((a, b) => b.peak - a.peak), [favs, tides, wx, sst, mode, sstLive]);
   const homePins = useMemo(() => SPOTS.map((s) => {
     const k = Object.keys(s.sp).sort((a, z) => (s.sp[z] || 0) - (s.sp[a] || 0))[0];
     const d = computeDay(s, k, today, ctxFor(today, s));
     return { s, lat: s.lat, lng: s.lng, name: s.name, peak: d.peak };
-  }), [tides, wx, sst, mode]);
+  }), [tides, wx, sst, mode, sstLive]);
   const mapRef = useRef(null);
   const spotMapRef = useRef(null);
   useEffect(() => {
@@ -901,7 +913,7 @@ function App() {
       out[s.id] = k ? { k, ...computeDay(s, k, today, ctxFor(today, s)) } : null;
     });
     return out;
-  }, [nearby, sp, mode, tides, wx, sst]);
+  }, [nearby, sp, mode, tides, wx, sst, sstLive]);
 
   const board = useMemo(() => {
     const out = [];
@@ -911,7 +923,7 @@ function App() {
       out.push({ date: dd, peak: m.peak, windows: m.windows, hourly: m.hourly, conf: confidence(i, spot) });
     }
     return out;
-  }, [spot.id, sp, mode, tides, wx, sst]);
+  }, [spot.id, sp, mode, tides, wx, sst, sstLive]);
 
   const ctxToday = ctxFor(date, spot);
   const tsNow = tideStateAt(ctxToday.events, date.getTime() === today.getTime() ? now : new Date(new Date(date).setHours(12)));
@@ -1087,7 +1099,7 @@ function App() {
       setPlanRes({ label, rows, top }); setPlanBusy(false); setPlanReq(null);
     }, 700);
     return () => clearTimeout(timer);
-  }, [planReq, tides]);
+  }, [planReq, tides, sstLive]);
   const jumpToPlan = (r) => { jumpToSpot(r.s); setDate(r.date); };
   const pickPlace = (g) => {
     setQ("");
