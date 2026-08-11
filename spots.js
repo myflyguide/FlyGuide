@@ -233,6 +233,12 @@ g.FG_KB = {
     { k: ["mullet run"], a: "September into October, the fall mullet run pours down the Florida Atlantic coast and every predator with a pulse follows it: snook in the trough, tarpon crashing pods, big jacks. Beach at dawn, big white baitfish fly or a Gurgler, cast parallel and hang on. It is the best month of shore fishing in the state." },
     { k: ["tailing", "tailer", "flood tide"], a: "Tailing fish are feeding fish with their heads down and guards down. Reds tail on flood tides over spartina grass, Jacksonville through the Lowcountry, biggest tides of August through October. Bones tail on early incoming across soft flats. Lead them 2 to 3 feet, land it soft, move it only when they can see it, and do not cast at the tail, the dinner end is the other end." },
     { k: ["charleston", "flood tide", "lowcountry", "spring tide"], a: "Charleston runs on tide height, not just tide stage. When the predicted high at the Charleston Harbor station tops about 5.7 feet, the water climbs into the short spartina and the flood tide tailing game fires: Copahee, the ACE, the flats behind Capers. Below that number the grass never floods, so fish the oyster points on the last of the ebb instead. September and October add the jetty bulls outside the harbor. The app gates flood-flat scores on tide height, so a low score on a flood spot usually means the grass stays dry that day, not that the fish left." },
+    { k: ["keys season", "when tarpon keys", "migration timing"], a: "Keys tarpon in one breath: resident and juvenile fish all winter in the basins and harbors, the ocean-side migration builds late March, peaks late April through mid-June, and the palolo worm moons in May and June are the two best evenings of the year. Bones fish year-round with spring and fall the kindest. Summer is hot, glassy, and underrated at dawn." },
+    { k: ["everglades season", "flamingo winter", "glades"], a: "The Glades run backwards from the postcard: winter is prime. November through March the dry season cleans and cools the water, snook and reds stack the creeks and outside points on the falling tides, and tarpon wake up in the rivers on any warm spell. Summer moves the game to dawn, thunderstorms own the afternoons, tarpon own the passes." },
+    { k: ["tampa bay season", "tampa"], a: "Tampa Bay's calendar: winter negative low tides expose the flats and gang reds in the potholes, spring wakes the snook on the mangrove lines, May and June send tarpon strings down the beaches and through the passes, and fall floods tail reds on every grass flat while the mullet run feeds everything. There is no off month, only different water." },
+    { k: ["bahamas diy", "diy bonefish", "flats permit"], a: "Bahamas DIY basics: a flats fishing permit is required nationwide and bones are catch and release, full stop. Rent the car or cart, fish the young flood on walkable sand, and give lodges and guides working clients the flat, there is always another one. Respect settlement water, buy lunch locally, and the island opens up. Best DIY bases in the app: Cherokee, Savannah Sound, Deep Creek, Exuma, Long Island, Bimini, Harbour Island, Green Turtle." },
+    { k: ["maine season", "maine stripers"], a: "Maine striper math: the fish arrive with the alewives in late May, June is the show on the river mouths (Kennebec, Saco, Scarborough, York), July and August shift to dawn tides and the cold-water beaches, and September sends everything south eating on the way. If the rivers run warm in high summer, fish the coast, the Piscataqua and the beaches stay cold." },
+    { k: ["jersey spring", "bunker run", "spring bass"], a: "The Jersey spring in order: April warms the rivers first, Graveling Point and the Mullica start it, then the adult bunker schools arrive along the beaches late April into June and the biggest bass of the year ride under them. Find the pods at dawn, throw the biggest fly you own, and let it fall through. Fall reverses the parade with sand eels and albies from late September." },
     { k: ["hurricane", "storm", "front"], a: "Two days before a front can be the best fishing of the month, the fish feel it and feed. The day it passes, stay home and tie flies. Bahamas and Florida June through November is hurricane season: the app will score it, but watch the tropics yourself, no score is worth a boat on your rental car." }
   ]
 };
@@ -1625,6 +1631,352 @@ g.FG_SPOTS = [
       prime: "Outgoing tide meeting first light, April through November. The fall mullet mornings are the peak.",
       blowout: "Swell shuts the front beach down. The Fort Moultrie seawall stretch on the harbor side fishes the lee."
     }, al: ["breach inlet", "sullivans", "isle of palms"] },
+  /* ================= BUILDOUT: EVERY REGION ================= */
+  { id: "wando", c: "lc", reg: "Charleston", name: "Wando River Flats", area: "Mount Pleasant SC",
+    lat: 32.8720, lng: -79.8340, sp: { redfish: 1 }, water: "marsh", sight: true,
+    station: "8665530", stName: "Charleston SC", lag: 20, tidePref: "incoming", expo: 60, minHi: 5.7,
+    access: { v: "Public ramps", n: "Remleys Point and the Paradise landing off Highway 41. Ten minutes from downtown and the river still fishes like it did before the bridges." },
+    wade: { r: "No", best: "high", n: "Pluff mud, stake at the grass. Shell rakes give a footstep or two, no more." },
+    boat: { ramps: [{ n: "Paradise landing", la: 32.8880, lo: -79.8130 }], drops: [{ n: "Upper Wando short grass", la: 32.9050, lo: -79.7900, note: "Quieter flood flats than Copahee, same fiddler buffet, half the skiffs." }] },
+    bait: "Fiddlers on the floods, shrimp thick in fall, finger mullet on every point.",
+    brief: {
+      read: "Charleston's third river and its quietest flood fishery. Same spartina, same tailing reds, fewer trailers at the ramp.",
+      cast: "Big evening floods, pole the short grass upriver and hunt tails. Between springs, run the oyster points on the last of the ebb, a fish a point when it is right.",
+      gear: "8wt, weedless Kwan and Redfish Crack #2 to #4, 16 to 20lb fluoro.",
+      prime: "Spring-tide evenings May through October, shrimp-heavy September the best of it.",
+      blowout: "The river bends block everything. This is the Charleston wind-day call."
+    }, al: ["wando", "paradise landing"] },
+
+  { id: "fripp", c: "lc", reg: "Beaufort SC", name: "Fripp & Hunting Island", area: "Hunting Island SC",
+    lat: 32.3420, lng: -80.4380, sp: { redfish: 1 }, water: "beach", sight: true,
+    station: "8665530", stName: "Charleston SC", lag: 25, tidePref: "outgoing", expo: 150, minHi: 5.7,
+    access: { v: "Public, state park", n: "Hunting Island State Park, day fee, lighthouse lots. Fripp Inlet fishes from the park side, the island across is gated. Tides estimated off Charleston." },
+    wade: { r: "Easy on the sand", best: "low", n: "Hard beach and the lagoon edges wade fine. The inlet current is honest, fish the seams from the sand." },
+    boat: { ramps: [{ n: "Russ Point landing", la: 32.3450, lo: -80.4520 }], drops: [] },
+    bait: "Mullet in the trough, shrimp flushing the lagoon, menhaden off the point in fall.",
+    brief: {
+      read: "A state park beach with a boneyard, a fishy lagoon, and an inlet on the south end. The walking angler's Beaufort.",
+      cast: "Dawn on the inlet seams with shrimp flies on the ebb, then walk the boneyard trough with the sun for cruisers between the dead oaks.",
+      gear: "8wt, intermediate at the inlet, floating on the walk, shrimp and small mullet flies.",
+      prime: "Outgoing tides at first light, April through November, October mullet mornings the peak.",
+      blowout: "Swell shuts the front. The lagoon and Johnson Creek behind the park fish protected."
+    }, al: ["fripp", "hunting island", "russ point"] },
+
+  { id: "murrells", c: "lc", reg: "Georgetown SC", name: "Murrells Inlet", area: "Murrells Inlet SC",
+    lat: 33.5340, lng: -79.0250, sp: { redfish: 1 }, water: "marsh", sight: true,
+    station: "8665530", stName: "Charleston SC", lag: -30, tidePref: "outgoing", expo: 120,
+    access: { v: "Public", n: "Morse Park landing and the jetty walk from Huntington Beach State Park. A compact, learnable marsh behind a restaurant row. Tides estimated off Charleston, running earlier." },
+    wade: { r: "Limited", best: "low", n: "Sand near the jetties and a few shell edges wade at low. The marsh proper is boat and kayak." },
+    boat: { ramps: [{ n: "Morse Park landing", la: 33.5540, lo: -79.0330 }], drops: [{ n: "The jetties", la: 33.5090, lo: -79.0290, note: "Fall bulls on the rocks and the seam, walkable from the state park side." }] },
+    bait: "Shrimp all over the creeks, mullet along the jetties, menhaden off the point in fall.",
+    brief: {
+      read: "The Grand Strand's honest fishery. A pocket marsh full of slot reds and a jetty pair that stacks bulls every fall within a long walk of a parking lot.",
+      cast: "Fish the creek points on the ebb inside. October, walk the Huntington side jetty at dawn and swing the seam for fish that pull twice their score.",
+      gear: "8wt inside, 9 or 10wt with a sink tip on the rocks, shrimp flies and EP mullet.",
+      prime: "September through November, outgoing at first light.",
+      blowout: "Swell over the rocks means stay inside, the marsh fishes in anything."
+    }, al: ["murrells", "huntington beach", "garden city"] },
+
+  { id: "ossabaw", c: "lc", reg: "Savannah GA", name: "Ossabaw Sound", area: "Richmond Hill GA",
+    lat: 31.8300, lng: -81.0800, sp: { redfish: 1, tarpon: 0.4 }, water: "marsh", sight: true,
+    station: "8670870", stName: "Fort Pulaski GA", lag: 15, tidePref: "incoming", expo: 120, minHi: 8.0,
+    access: { v: "Public ramps", n: "Fort McAllister and Kilkenny Creek landings off GA 144. Ossabaw Island itself is a heritage preserve, the water around it is yours." },
+    wade: { r: "No", best: "high", n: "Georgia mud, all of it. Stake and fish, the boat is the flat." },
+    boat: { ramps: [{ n: "Fort McAllister ramp", la: 31.8890, lo: -81.1950 }], drops: [{ n: "Ossabaw backside grass", la: 31.8200, lo: -81.0600, note: "Eight foot floods put tails in grass nobody else poles. Summer tarpon roll the sound mouth." }] },
+    bait: "Fiddlers, shrimp, and menhaden pods at the mouth with tarpon in tow.",
+    brief: {
+      read: "Between Wassaw and St Catherines sits a sound most anglers drive past. Same monster Georgia tides, same tails, empty water.",
+      cast: "Flood drill in the short grass behind the island. On the July flats calm, run the sound mouth at dawn and look for rolling silver on the bait.",
+      gear: "8wt for the grass, 11wt riding along in summer, weedless crabs and one black/purple toad.",
+      prime: "July through October, floods for tails, summer mornings for tarpon.",
+      blowout: "The Bear River and Kilkenny arms are the lee, always."
+    }, al: ["ossabaw", "richmond hill", "kilkenny"] },
+
+  { id: "cumberland", c: "lc", reg: "Golden Isles GA", name: "Cumberland Island & St Marys", area: "St Marys GA",
+    lat: 30.8100, lng: -81.4700, sp: { redfish: 1, tarpon: 0.5 }, water: "marsh", sight: true,
+    station: "8720030", stName: "Fernandina Beach FL", lag: 5, tidePref: "incoming", expo: 130,
+    access: { v: "Public ramps, boat smart", n: "St Marys waterfront ramp and Crooked River State Park. Cumberland is national seashore, wilderness rules, the ferry carries no boats so bring your own hull." },
+    wade: { r: "Limited", best: "low", n: "Some firm sand on the sound bars at low. The marsh is mud, the island beach walks forever if you land legally at the seashore dock." },
+    boat: { ramps: [{ n: "St Marys ramp", la: 30.7180, lo: -81.5460 }], drops: [{ n: "Cumberland backside flats", la: 30.8300, lo: -81.4600, note: "Flood tails behind the wild horses. The sound mouth holds tarpon and bulls on the fall bait." }] },
+    bait: "Fiddlers and shrimp in the marsh, mullet and menhaden pouring past the jetties in fall.",
+    brief: {
+      read: "Georgia's last island, wild horses on the dunes and redfish tailing in the marsh behind. The St Marys jetties funnel every fall migrant on this coast.",
+      cast: "Floods behind the island, the standard tailing hunt. October, drift the jetty seams on the outgoing for bulls, tarpon crash the same bait some mornings.",
+      gear: "8wt and a 10wt both strung in fall, crabs inside, big mullet flies out front.",
+      prime: "August through October, and the flood tails run all summer.",
+      blowout: "The Crooked River and Cumberland River bends fish any wind."
+    }, al: ["cumberland", "st marys", "crooked river"] },
+
+  { id: "long-key", c: "fl", reg: "Middle Keys", name: "Long Key & the Channels", area: "Long Key FL",
+    lat: 24.8180, lng: -80.8200, sp: { tarpon: 0.9, bonefish: 0.7 }, water: "flat", sight: true,
+    station: "8723970", stName: "Vaca Key FL", lag: 10, tidePref: "incoming", expo: 140,
+    access: { v: "Public, state park", n: "Long Key State Park puts wadeable oceanside flats behind the campsites, day fee. Channel Two and Five bridges have walk-on access at the old spans." },
+    wade: { r: "Easy where sandy", best: "low", n: "The park's oceanside flat wades firm sand and marl. Channel edges drop fast, fish them from the rocks or a skiff." },
+    boat: { ramps: [{ n: "Long Key ramps, bayside", la: 24.8230, lo: -80.8130 }], drops: [{ n: "Channel Two edges", la: 24.8430, lo: -80.7700, note: "Tarpon stem the tide in the channel shadows spring through summer, the old bridge is the poor man's skiff." }] },
+    bait: "Pilchards through the channels, shrimp and crabs on the flat, worms on the May moons.",
+    brief: {
+      read: "The sleeper of the Middle Keys. A walk-in oceanside bonefish flat inside a state park, and tarpon channels either side that fish from the old bridge spans.",
+      cast: "Dawn on the park flat for tails before the campers wake. Tide change at the channels, swing a black/purple fly down the shadow line and jump something rude.",
+      gear: "8wt on the flat, 11wt at the bridges with 80lb shock around the pilings.",
+      prime: "March through June, incoming water, first light.",
+      blowout: "East wind chops the ocean flat. The bayside basins behind the park stay poling calm."
+    }, al: ["long key", "channel two", "channel five"] },
+
+  { id: "bahia-honda", c: "fl", reg: "Lower Keys", name: "Bahia Honda & Big Pine Backcountry", area: "Big Pine Key FL",
+    lat: 24.6700, lng: -81.2800, sp: { tarpon: 0.8, bonefish: 0.8 }, water: "flat", sight: true,
+    station: "8723970", stName: "Vaca Key FL", lag: 15, tidePref: "incoming", expo: 150,
+    access: { v: "Public park plus boat", n: "Bahia Honda State Park for the walk-in flats and the famous bridge channel. The Content Keys backcountry north of Big Pine is skiff water, permit yourself a guide day first." },
+    wade: { r: "Easy in the park", best: "low", n: "Sandspur flat and the park shorelines wade well. Backcountry marl is softer, follow the skiff rules." },
+    boat: { ramps: [{ n: "Spanish Harbor ramp", la: 24.6490, lo: -81.3080 }], drops: [{ n: "Content Keys edges", la: 24.7800, lo: -81.4800, note: "The Lower Keys backcountry at its best: bones on the flats, tarpon laid up in the basins, nobody home." }] },
+    bait: "Shrimp and crabs on the flats, pilchards in the channels, worms in season.",
+    brief: {
+      read: "The prettiest beach in the Keys hides a serious fishery: bones on the park flats, tarpon stemming the bridge channel, and the Content Keys wilderness a run north.",
+      cast: "Wade the park flat at low incoming for tails. The bridge channel fishes the tide change like Marathon's spans, black fly, slow swing.",
+      gear: "8wt on the sand, 11wt for the channel and basins, tan Gotchas and toads.",
+      prime: "March through June, plus winter warm spells in the backcountry basins.",
+      blowout: "Wind picks your side for you, ocean or gulf, Big Pine always has one working."
+    }, al: ["bahia honda", "big pine", "content keys"] },
+
+  { id: "naples-beach", c: "fl", reg: "Southwest FL", name: "Naples Beaches", area: "Naples FL",
+    lat: 26.1600, lng: -81.8150, sp: { snook: 1 }, water: "beach", sight: true,
+    station: "8725110", stName: "Naples FL", lag: 0, tidePref: "incoming", expo: 250,
+    access: { v: "Public, metered", n: "Street-end beach accesses off Gulf Shore Blvd, meters wake late, dawn parks free most spots. The pier area and Lowdermilk stretch fish best." },
+    wade: { r: "Barely needed", best: "any", n: "The fish are in shin water at your feet, stay dry-footed and walk the waterline." },
+    boat: { ramps: [], drops: [] },
+    bait: "Glass minnows and scaled sardines in the trough all summer, mullet through September.",
+    brief: {
+      read: "Sanibel's ritzier twin. Summer snook cruise the first trough in gin water past millionaires who never look down.",
+      cast: "Dawn walk, sun behind you, cast parallel ahead of cruising fish. Small fly, soft landing, fast erratic strips, the eat happens ten feet off dry sand.",
+      gear: "8wt floating, 30lb shock, tiny white baitfish #2 to #4, a DT Special for the snooty ones.",
+      prime: "May through September, first two hours of light, flat calm.",
+      blowout: "Any surf ends it. Rookery Bay's mangrove edges are fifteen minutes south."
+    }, al: ["naples beach", "lowdermilk", "naples pier"] },
+
+  { id: "caladesi", c: "fl", reg: "Tampa Bay", name: "Caladesi & Honeymoon Islands", area: "Dunedin FL",
+    lat: 28.0620, lng: -82.8200, sp: { redfish: 1, snook: 0.9 }, water: "flat", sight: true,
+    station: "8726724", stName: "Clearwater Beach FL", lag: 0, tidePref: "incoming", expo: 260,
+    access: { v: "Public, park fee", n: "Honeymoon Island State Park drive-on, Caladesi by ferry or kayak across Hurricane Pass. The north end grass flats are the fishery." },
+    wade: { r: "Easy", best: "low", n: "Hard sand and grass wades beautifully off both islands. Hurricane Pass rips, cross it in a boat not on foot." },
+    boat: { ramps: [{ n: "Dunedin Marina ramp", la: 28.0110, lo: -82.7930 }], drops: [] },
+    bait: "Scaled sardines on the edges, shrimp in the grass, mullet schools with reds under them.",
+    brief: {
+      read: "Two barrier island parks with the best wadeable grass flats on the central Gulf coast. Reds in the potholes, snook on the mangrove points, all on foot.",
+      cast: "Wade the north end flats on the young flood, fishing potholes like a milk run. Snook hold the shady mangrove points, hit them tight and strip fast.",
+      gear: "8wt floating, weedless Kwan, white baitfish for the snook, 30lb shock.",
+      prime: "March through November, incoming mornings, big floods best.",
+      blowout: "West wind chops the flats. St Joseph Sound inside the islands stays fishable and holds the same fish."
+    }, al: ["caladesi", "honeymoon island", "dunedin", "hurricane pass"] },
+
+  { id: "weedon", c: "fl", reg: "Tampa Bay", name: "Weedon Island & Upper Tampa Bay", area: "St Petersburg FL",
+    lat: 27.8500, lng: -82.6100, sp: { redfish: 1, snook: 0.8 }, water: "mangrove", sight: true,
+    station: "8726520", stName: "St Petersburg FL", lag: 0, tidePref: "incoming", expo: 90,
+    access: { v: "Public", n: "Weedon Island Preserve ramp and paddle launches. A marked kayak trail threads the mangroves, this is the bay's paddle fishery headquarters." },
+    wade: { r: "Limited", best: "low", n: "Some firm sand and shell edges wade. Most of it fishes from kayak and skiff over grass and cuts." },
+    boat: { ramps: [{ n: "Weedon Island ramp", la: 27.8490, lo: -82.6090 }], drops: [] },
+    bait: "Sardines and shrimp in the grass, mullet everywhere, glass minnows in the cuts.",
+    brief: {
+      read: "A preserve inside the city where reds tail on the flats and snook ambush the mangrove cuts, ten minutes from downtown St Pete.",
+      cast: "Paddle quiet, fish the pothole edges on the flood, and work every mangrove cut mouth on the ebb. Urban fish, wild manners when hooked.",
+      gear: "8wt, weedless crab and shrimp flies, 30lb shock for the bushes.",
+      prime: "Year-round, fall the strongest, morning floods.",
+      blowout: "The preserve is a natural windbreak. Dirty water days mean gold spoon flies and shorter shots."
+    }, al: ["weedon", "st pete", "upper tampa"] },
+
+  { id: "ozello", c: "fl", reg: "Nature Coast", name: "Ozello & St Martins Keys", area: "Crystal River FL",
+    lat: 28.8600, lng: -82.6700, sp: { redfish: 1 }, water: "flat", sight: true,
+    station: "8727520", stName: "Cedar Key FL", lag: -20, tidePref: "incoming", expo: 260,
+    access: { v: "Public", n: "Ozello community ramp at the end of the Ozello Trail, one of Florida's great drives. A maze of limestone keys and grass, take a track out. Tides estimated off Cedar Key." },
+    wade: { r: "Mixed", best: "low", n: "Rock and firm grass wades in patches, soft between. The rocks eat props, idle everything." },
+    boat: { ramps: [{ n: "Ozello ramp", la: 28.8560, lo: -82.6660 }], drops: [{ n: "St Martins outside grass", la: 28.8700, lo: -82.7100, note: "Reds crawl the rocky potholes on the flood, sight fishing between the limestone heads." }] },
+    bait: "Pinfish and crabs in the rocks, mullet schools threading the keys.",
+    brief: {
+      read: "The most intricate water on the Nature Coast, a thousand limestone islands where reds root the potholes and nobody finds the same fish twice.",
+      cast: "Flood tide, pick a chain of keys and work the potholes between them, weedless fly hopped once per hole. The takes are close and violent.",
+      gear: "8wt, weedless copper crab flies, 16lb, and your best idle-speed patience.",
+      prime: "March through November floods, winter negative lows concentrate them in the outside holes.",
+      blowout: "West wind drains it dry. Kings Bay and the river hold fish when the flats are a mudflat."
+    }, al: ["ozello", "st martins", "crystal river flats"] },
+
+  { id: "ponce", c: "fl", reg: "East Central FL", name: "Ponce Inlet & New Smyrna Backcountry", area: "New Smyrna Beach FL",
+    lat: 29.0650, lng: -80.9200, sp: { redfish: 1, snook: 0.7, tarpon: 0.5 }, water: "inlet", sight: true,
+    station: "8721604", stName: "Trident Pier FL", lag: 30, tidePref: "outgoing", expo: 110,
+    access: { v: "Public", n: "Lighthouse Point Park at the inlet, plus North Causeway and JB's Fish Camp ramps for the backcountry. Tides estimated off Trident Pier." },
+    wade: { r: "Easy in the backcountry", best: "low", n: "Hard sand flats behind the inlet wade well. The inlet current is the fastest on this coast, fish it from the jetty and sand only." },
+    boat: { ramps: [{ n: "North Causeway ramp", la: 29.0280, lo: -80.9210 }], drops: [{ n: "Backcountry sand flats", la: 29.0400, lo: -80.9100, note: "Gin-clear flats south of the inlet hold sight-fishing reds year-round, the poor man's Mosquito Lagoon." }] },
+    bait: "Glass minnows and mullet at the inlet, shrimp and crabs on the flats, big fall mullet run.",
+    brief: {
+      read: "Where the Mosquito Lagoon's clear water meets a real inlet. Sight fishing on the backcountry sand, snook on the jetty, tarpon crashing fall mullet.",
+      cast: "Flats first with the sun, standard clear-water leads for cruising reds. Fall mornings, the inlet north jetty on the outgoing when the mullet pour through.",
+      gear: "8wt floating on the flats, 9wt intermediate at the jetty, 30lb shock there.",
+      prime: "Year-round on the flats, September October for the inlet circus.",
+      blowout: "Swell owns the inlet. The backcountry behind the dunes never blows out."
+    }, al: ["ponce", "new smyrna", "jbs"] },
+
+  { id: "palm-beach", c: "fl", reg: "Southeast FL", name: "Palm Beach & Lake Worth Inlets", area: "West Palm Beach FL",
+    lat: 26.7730, lng: -80.0430, sp: { snook: 1, tarpon: 0.7 }, water: "inlet", sight: false,
+    station: "8722670", stName: "Lake Worth Pier FL", lag: 0, tidePref: "outgoing", expo: 90,
+    access: { v: "Public", n: "Palm Beach Inlet's Peanut Island fishes by kayak or shuttle, Lake Worth Inlet jetties walk on from the park sides. Night fishing legal and productive." },
+    wade: { r: "Bank and beach", best: "any", n: "Jetty rocks and beach corners, no wading the cuts. Peanut Island's shorelines wade easy once you land." },
+    boat: { ramps: [{ n: "Currie Park ramp", la: 26.7330, lo: -80.0480 }], drops: [{ n: "Peanut Island edges", la: 26.7720, lo: -80.0420, note: "Snook stack the island's shadow lines and dock lights, tarpon roll the inlet on winter shrimp nights." }] },
+    bait: "Glass minnows in the inlet, winter shrimp runs on the night ebbs, fall mullet down the beach.",
+    brief: {
+      read: "The Gulf Stream runs closer here than anywhere, and the inlets pull its energy inside. Snook by the hundred on structure, winter night tarpon on the shrimp flushes.",
+      cast: "Night outgoing, dead drift shrimp flies along the shadow lines and lit seawalls. Fall dawn, walk the beach north of the inlet under the mullet schools.",
+      gear: "9wt intermediate, 40lb shock for snook, an 11wt with 80lb when the winter tarpon show at the lights.",
+      prime: "December through March night ebbs for silver, September October for the mullet mayhem.",
+      blowout: "Swell shuts the beach, never the inlet lights. This is the rain-check spot for the whole coast."
+    }, al: ["palm beach inlet", "peanut island", "lake worth"] },
+
+  { id: "gtm", c: "fl", reg: "Northeast FL", name: "GTM Reserve & Guana Marshes", area: "Ponte Vedra Beach FL",
+    lat: 30.0200, lng: -81.3300, sp: { redfish: 1 }, water: "marsh", sight: true,
+    station: "8720218", stName: "Mayport FL", lag: 30, tidePref: "incoming", expo: 100,
+    access: { v: "Public, reserve fee", n: "GTM Research Reserve lots off A1A, kayak launches into the Guana and Tolomato. Quiet water with rules, honor the posted zones. Tides estimated off Mayport." },
+    wade: { r: "Limited", best: "low", n: "Shell and sand edges wade in spots. Mostly a paddle fishery, which is why the fish are calm." },
+    boat: { ramps: [{ n: "Guana dam launch", la: 30.0500, lo: -81.3320 }], drops: [] },
+    bait: "Fiddlers on the floods, shrimp and mud minnows in the creeks, fall mullet in the Tolomato.",
+    brief: {
+      read: "Protected marsh between Jacksonville and St Augustine where flood tails happen on schedule and motor noise mostly does not.",
+      cast: "Paddle in on the building flood, stake at the short grass, and hunt tails. The Tolomato oyster points fish the ebb the rest of the month.",
+      gear: "8wt, weedless crab flies, 16lb, a kayak and the patience it teaches.",
+      prime: "August through October floods, evening peaks best.",
+      blowout: "The dune line kills east wind entirely. This is northeast Florida's wind-proof card."
+    }, al: ["gtm", "guana", "tolomato", "ponte vedra"] },
+
+  { id: "green-turtle", c: "bah", reg: "Abaco", name: "Green Turtle & North Abaco", area: "Green Turtle Cay, Bahamas",
+    lat: 26.7660, lng: -77.3300, sp: { bonefish: 1 }, water: "flat", sight: true,
+    station: null, stName: null, lag: 0, tidePref: "incoming", expo: 130,
+    access: { v: "Ferry and DIY", n: "Green Turtle ferry from Treasure Cay, golf carts on the cay, walk-in flats at Gillam Bay and the north end. Permit required, C&R nationwide." },
+    wade: { r: "Easy", best: "low", n: "Gillam Bay's white sand wades like a dream. The ocean side cuts drop off, stay on the bank." },
+    boat: { ramps: [], drops: [] },
+    bait: "Shrimp and small crabs across sand so white the fish glow against it.",
+    brief: {
+      read: "The postcard cay north of the hurricane rebuild, back and fishing. Gillam Bay's crescent holds tailing bones most mornings, walkable from the settlement.",
+      cast: "Dawn at Gillam on the young flood, singles tailing against the white. Long lead, small fly, and let the sand puff sell it.",
+      gear: "8wt, #4 to #6 Gotchas and Bitters, 12lb, bead chain for the shallow sand.",
+      prime: "November through June, incoming mornings.",
+      blowout: "The lee flips with the wind: Gillam east days, White Sound west days, the cart knows the way."
+    }, al: ["green turtle", "gillam bay", "new plymouth"] },
+
+  { id: "south-andros", c: "bah", reg: "Andros", name: "South Andros & Little Creek", area: "South Andros, Bahamas",
+    lat: 23.9800, lng: -77.5500, sp: { bonefish: 1 }, water: "flat", sight: true,
+    station: null, stName: null, lag: 0, tidePref: "incoming", expo: 200,
+    access: { v: "Lodge water mostly", n: "Congo Town airport, then the lodge skiffs open a hundred creeks south. Some walk-in near the settlements, ask before you fish someone's guide beat." },
+    wade: { r: "Mixed", best: "low", n: "Ocean-side sand wades firm, the creek marls are soft. The guides know which is which to the yard." },
+    boat: { ramps: [], drops: [] },
+    bait: "Shrimp, crabs, and gobies in creeks that have fed bonefish since before names.",
+    brief: {
+      read: "The bottom of the bonefish world. Creek after creek pouring onto white flats, schools by the hundred and singles that make the West Side blush.",
+      cast: "Creek mouths on the falling, flats on the flood, the Andros rhythm. When the school comes, pick the edge fish, land soft, and the day makes itself.",
+      gear: "8wt, full Bahamas box plus a few #2 mantis patterns with lead eyes for the ocean-side heavies.",
+      prime: "October through June, tide changes, morning light.",
+      blowout: "A hundred creeks means a hundred lees. There is no blowout on South Andros, only decisions."
+    }, al: ["south andros", "little creek", "congo town"] },
+
+  { id: "harbour-island", c: "bah", reg: "Eleuthera", name: "Harbour Island & North Eleuthera", area: "Harbour Island, Bahamas",
+    lat: 25.5000, lng: -76.6350, sp: { bonefish: 1 }, water: "flat", sight: true,
+    station: null, stName: null, lag: 0, tidePref: "incoming", expo: 120,
+    access: { v: "DIY friendly", n: "Water taxi from North Eleuthera, golf carts to the bay side. The famous pink beach is the tourist side, the bones live on the bay flats behind town." },
+    wade: { r: "Easy", best: "low", n: "Bay-side sand and grass wades well on the lower half. Give the moored boats and the taxi channel room." },
+    boat: { ramps: [], drops: [] },
+    bait: "Shrimp and crabs on the bay flats, fry against the mangrove edges north of town.",
+    brief: {
+      read: "Celebrity island, workingman's flat. While the pink beach takes the photos, the harbor-side sand holds tailing bones a cart ride from breakfast.",
+      cast: "Fish the bay flats on the young flood, morning sun behind you. The fish see traffic, so lead long and land soft, then it is just bonefishing.",
+      gear: "8wt, 12ft to 12lb, #4 to #6 tan Gotchas, one crab for the bigger singles.",
+      prime: "November through June, incoming with sun.",
+      blowout: "East wind is the pink beach's problem, not yours, the bay side hides from it completely."
+    }, al: ["harbour island", "briland", "north eleuthera"] },
+
+  { id: "exuma-cays", c: "bah", reg: "Exuma", name: "Northern Exuma Cays", area: "Staniel Cay, Bahamas",
+    lat: 24.1700, lng: -76.4400, sp: { bonefish: 1 }, water: "flat", sight: true,
+    station: null, stName: null, lag: 0, tidePref: "incoming", expo: 150,
+    access: { v: "Boat and small planes", n: "Staniel Cay airstrip and marina, then a chain of flats north and south by dinghy. Land And Sea Park water is no-take entirely, fish outside its lines." },
+    wade: { r: "Easy", best: "low", n: "Cay after cay of firm white sand. The cuts between rip on the change, cross with the engine, not your legs." },
+    boat: { ramps: [], drops: [] },
+    bait: "Shrimp and crabs on the sand, fry balls in the cut mouths that everything ambushes.",
+    brief: {
+      read: "The swimming pigs get the fame, the flats between the cays deserve it. Every white beach ends in a bank that holds bones on the flood.",
+      cast: "Dinghy hop the cays, walk the banks with the tide, and take the shots as they come. Cut mouths on the change fish like conveyor belts.",
+      gear: "8wt, standard box, an extra spool of leader because the coral wins some.",
+      prime: "November through May, incoming, and the wind decides which shore.",
+      blowout: "The chain always offers a lee bank. Trade-wind casting is the entry fee, pay it."
+    }, al: ["staniel", "exuma cays", "pig beach"] },
+
+  { id: "york-me", c: "ne", reg: "Maine", name: "York River & Harbor", area: "York ME",
+    lat: 43.1310, lng: -70.6460, sp: { striper: 1 }, water: "inlet", sight: false,
+    station: "8423898", stName: "Fort Point NH", lag: 5, tidePref: "outgoing", expo: 120,
+    access: { v: "Public", n: "Town docks off Route 103 and the Harbor Beach lot. Wiggly Bridge and the Steedman Woods loop put the walking angler on the river narrows." },
+    wade: { r: "Moderate", best: "low", n: "Harbor beach and the river edges wade at lower stages. The narrows under Wiggly Bridge sluice hard, fish from the bank there." },
+    boat: { ramps: [{ n: "York Harbor town ramp", la: 43.1330, lo: -70.6420 }], drops: [] },
+    bait: "Silversides and shrimp draining the marsh, sand eels off Harbor Beach, mackerel outside in June.",
+    brief: {
+      read: "A pocket Maine river with a postcard harbor and honest stripers. The marsh above the Wiggly Bridge drains past the narrows and the fish set the table there twice a day.",
+      cast: "Swing shrimp and silverside flies through the narrows on the outgoing, then work the harbor beach corner at first light.",
+      gear: "8 or 9wt, intermediate, shrimp patterns #2 and slim sand eels.",
+      prime: "June through September, last half of the ebb at dawn.",
+      blowout: "Swell folds into the harbor mouth. The river above the bridge stays calm and holds fish."
+    }, al: ["york river", "york harbor", "wiggly bridge"] },
+
+  { id: "casco", c: "ne", reg: "Maine", name: "Casco Bay & Portland", area: "Portland ME",
+    lat: 43.6600, lng: -70.2200, sp: { striper: 1 }, water: "current", sight: false,
+    station: "8418150", stName: "Portland ME", lag: 0, tidePref: "moving", expo: 120,
+    access: { v: "Public", n: "East End Beach ramp in town, Willard Beach and Bug Light in South Portland, Fore River trails. City fishery, the tide station is here, times exact." },
+    wade: { r: "Bank and beach", best: "low", n: "Beaches wade easy, the ledges fish from the rocks. The channel currents are shipping-lane serious." },
+    boat: { ramps: [{ n: "East End Beach ramp", la: 43.6690, lo: -70.2420 }], drops: [{ n: "Fort Gorges edges", la: 43.6650, lo: -70.2210, note: "The old fort's ledges and the island seams hold bass all summer, a kayak's dream commute." }] },
+    bait: "Mackerel and herring in June, sand eels along the island beaches, peanut bunker in the coves come fall.",
+    brief: {
+      read: "Maine's city bay, littered with islands, ledges, and forts, all of it holding bass a paddle from the Old Port.",
+      cast: "Fish the island seams on the moving tide, count sinking lines down the ledge edges by day, swim black flies over them at dark.",
+      gear: "9wt, intermediate plus a 300 grain, mackerel flies in June, sand eels after.",
+      prime: "June through September, moving tides at dawn before the ferries wake.",
+      blowout: "A hundred islands make a hundred lees. Casco laughs at wind."
+    }, al: ["casco", "portland", "bug light", "fort gorges"] },
+
+  { id: "niantic", c: "ne", reg: "Connecticut", name: "Niantic Bay & the Race Edge", area: "Niantic CT",
+    lat: 41.3080, lng: -72.1900, sp: { striper: 1, albie: 0.7 }, water: "current", sight: false,
+    station: "8461490", stName: "New London CT", lag: 5, tidePref: "moving", expo: 170,
+    access: { v: "Public", n: "Niantic Bay boardwalk and Cini Park at the river mouth, Dock Road launches. The Race itself is boat water, the bay and river mouth fish on foot." },
+    wade: { r: "Easy in the bay", best: "any", n: "Sand and gravel wades fine along the boardwalk stretch. The river mouth rips on the ebb, fish the edges." },
+    boat: { ramps: [{ n: "Dock Road ramp", la: 41.3160, lo: -72.2000 }], drops: [{ n: "Bartlett Reef line", la: 41.2760, lo: -72.1300, note: "The reef edge toward the Race holds bass all season and albies from late August, drift the seams." }] },
+    bait: "Sand eels in the bay, anchovies streaming past in fall, squid on the reefs in June.",
+    brief: {
+      read: "The bay that sits in the Race's slipstream. Everything migrating through eastern Long Island Sound trades past Niantic, and the fall albie parade runs the boardwalk in casting range some mornings.",
+      cast: "Swing the river mouth ebb at dawn, then watch the bay for showers, September albies pin bait right against the beach here.",
+      gear: "9wt, intermediate, sand eel flies and the epoxy anchovy box from Labor Day.",
+      prime: "June, then September and October, moving tides at first light.",
+      blowout: "South swell rolls the bay. The river above the bridges fishes protected on the same tide."
+    }, al: ["niantic", "the race", "bartlett reef"] },
+
+  { id: "peconic", c: "ne", reg: "Long Island NY", name: "Peconic Bays & Robins Island", area: "Southold NY",
+    lat: 40.9600, lng: -72.4400, sp: { striper: 1, albie: 0.6 }, water: "flat", sight: true,
+    station: "8510560", stName: "Montauk NY", lag: 70, tidePref: "incoming", expo: 100,
+    access: { v: "Public, town rules", n: "Town ramps at New Suffolk and Southold, beach permits vary by town, check locally. Tides run well behind Montauk, estimates here." },
+    wade: { r: "Easy where sandy", best: "low", n: "North Fork sand flats wade well at lower stages. Robins Island itself is private above the waterline, stay wet." },
+    boat: { ramps: [{ n: "New Suffolk ramp", la: 40.9910, lo: -72.4740 }], drops: [{ n: "Robins Island bars", la: 40.9600, lo: -72.4450, note: "The tide rips around both ends of the island, bass on the bars, fall albies flushing bait between the forks." }] },
+    bait: "Sand eels and silversides on the flats, peanut bunker in the creeks, bay anchovies by September.",
+    brief: {
+      read: "Wine country stripers. The sheltered bays between the forks warm early, fish skinny flats in spring, and funnel a sneaky albie run in fall.",
+      cast: "Spring, sight-fish the warming flats like a scaled-down Monomoy. Fall, work the island rips and creek mouths as the bait pours toward the ocean.",
+      gear: "8wt floating on the flats, 9wt intermediate at the rips, small anchovy flies for the September visitors.",
+      prime: "May and June on the flats, September October at the rips.",
+      blowout: "The forks block most wind. A hard northeaster means the south shore of the bays, still fishable."
+    }, al: ["peconic", "robins island", "new suffolk", "north fork"] },
+
+  { id: "barnegat", c: "ne", reg: "New Jersey", name: "Barnegat Inlet & Bay", area: "Barnegat Light NJ",
+    lat: 39.7620, lng: -74.0980, sp: { striper: 1, albie: 0.5 }, water: "inlet", sight: false,
+    station: "8534720", stName: "Atlantic City NJ", lag: -15, tidePref: "moving", expo: 100,
+    access: { v: "Public", n: "Barnegat Lighthouse State Park puts you on the famous south jetty walk. Bayside sedges launch from the Waretown and Barnegat town ramps. Tides estimated off Atlantic City." },
+    wade: { r: "Jetty and sedges", best: "any", n: "The jetty is a rock walk, korkers help. The bay sedge edges wade firm sand in spots, mud in others, test it." },
+    boat: { ramps: [{ n: "Barnegat municipal ramp", la: 39.7440, lo: -74.1900 }], drops: [{ n: "Inlet rips", la: 39.7590, lo: -74.0890, note: "The rips off the jetty tips hold bass on every moving tide, fall runs stack them deep." }] },
+    bait: "Bunker in the bay, sand eels and rain bait along the front, mullet through September.",
+    brief: {
+      read: "Old Barney's inlet, the mid-coast pinch point. Bay bait meets ocean current at the lighthouse rocks, and the fall run parks fish here for weeks.",
+      cast: "Walk the jetty and swing the seams on the moving tide. Inside, the sedge island points fish the ebb like every good marsh.",
+      gear: "9 or 10wt, 300 grain at the rocks, intermediate in the bay, a stripping basket on the jetty.",
+      prime: "October and November, moving tides, dawn on the rocks.",
+      blowout: "Swell over the jetty means stay off it, no fish is worth those rocks. The bay sedges fish the same tide safely."
+    }, al: ["barnegat", "old barney", "lbi"] },
+
 
   /* ================= EXPANSION: FLORIDA ================= */
   { id: "steinhatchee", c: "fl", reg: "Big Bend", name: "Steinhatchee & the Big Bend", area: "Steinhatchee FL",

@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="spots.js?v=29"></script>
+<script src="spots.js?v=30"></script>
 <style>
   html, body { margin: 0; padding: 0; background: #14181A; overflow-x: hidden; max-width: 100vw; }
   #root { overflow-x: clip; }
@@ -72,12 +72,25 @@ const RIVERS = CORR.flatMap((c) => (c.rivers || []));
 const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 const GRADES = ["SKUNKED", "SLOW", "DECENT", "LIGHTS OUT"];
 const SPP = (k) => { const n = SPX[k].short.toLowerCase(); return (k === "striper" || k === "albie") ? n + "s" : n; };
+const bestStretch = (d) => {
+  if (!d || !d.hourly || !d.hourly.length) return null;
+  let pi = 0; d.hourly.forEach((p, i) => { if (p.score > d.hourly[pi].score) pi = i; });
+  const thr = Math.max(d.hourly[pi].score * 0.85, 1);
+  let a = pi, b = pi;
+  while (a > 0 && d.hourly[a - 1].score >= thr) a--;
+  while (b < d.hourly.length - 1 && d.hourly[b + 1].score >= thr) b++;
+  return [d.hourly[a].h, d.hourly[b].h];
+};
 const winTxt = (d) => {
-  if (!d || !d.windows || !d.windows.length || !d.hourly) return "";
-  const scoreOf = (w) => Math.max(...d.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
-  const best = [...d.windows].sort((x, y) => scoreOf(y) - scoreOf(x))[0];
+  if (!d || !d.hourly || !d.hourly.length) return "";
   const f = (h) => (h % 12 === 0 ? 12 : h % 12) + (h >= 12 ? "p" : "a");
-  return f(best[0]) + " to " + f(best[1] + 1);
+  if (d.windows && d.windows.length) {
+    const scoreOf = (w) => Math.max(...d.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
+    const best = [...d.windows].sort((x, y) => scoreOf(y) - scoreOf(x))[0];
+    return f(best[0]) + " to " + f(best[1] + 1);
+  }
+  const st = bestStretch(d);
+  return st ? f(st[0]) + " to " + f(st[1] + 1) : "";
 };
 const wrapText = (x, text, tx, ty, maxW, lh) => {
   const words = String(text).split(" "); let line = "", yy = ty;
@@ -860,7 +873,16 @@ function App() {
   const condLine = `${cor.short} right now: water ~${ctxToday.sst}F, wind ${Math.round(ctxToday.windByHour[12] != null ? ctxToday.windByHour[12] : ctxToday.windClimo)} mph, ${moonEmoji(moonP)} ${moonName(moonP).toLowerCase()}. ${spot.station ? "Tides: NOAA " + spot.stName + (spot.lag ? " shifted " + spot.lag + " min (estimate)." : ".") : CFG.WORLDTIDES_KEY ? "Tides: WorldTides for this flat." : "No tide feed for this water yet, scoring runs on season, weather, and light. Add a WorldTides key for exact times."}`;
 
   const whenToday = useMemo(() => {
-    if (!dm || !dm.windows.length) return [];
+    if (!dm) return [];
+    if (!dm.windows.length) {
+      const st = bestStretch(dm);
+      if (!st) return [];
+      const at0 = (hh) => { const t = new Date(date); t.setHours(Math.floor(hh), Math.round((hh % 1) * 60), 0, 0); return t; };
+      const s0 = at0(st[0] + 0.5), e0 = at0(st[1] + 0.5);
+      const ts0 = ctxToday.events ? tideStateAt(ctxToday.events, new Date((s0.getTime() + e0.getTime()) / 2)) : null;
+      const why0 = (ts0 ? (ts0.rising ? "on the flood, " : "on the ebb, ") : "") + "the best of a slow day";
+      return [{ s: s0, e: e0, why: why0 }];
+    }
     const at = (hh) => { const t = new Date(date); t.setHours(Math.floor(hh), Math.round((hh % 1) * 60), 0, 0); return t; };
     const scoreOf = (w) => Math.max(...dm.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
     const ws = [...dm.windows].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 2).sort((a, b) => a[0] - b[0]);
