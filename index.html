@@ -71,6 +71,7 @@ const CFG = window.FG_CONFIG, SPX = window.FG_SPECIES, CORR = window.FG_CORRIDOR
 const RIVERS = CORR.flatMap((c) => (c.rivers || []));
 const SB = (CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY) : null;
 const GRADES = ["SKUNKED", "SLOW", "DECENT", "LIGHTS OUT"];
+const SPP = (k) => { const n = SPX[k].short.toLowerCase(); return (k === "striper" || k === "albie") ? n + "s" : n; };
 const winTxt = (d) => {
   if (!d || !d.windows || !d.windows.length || !d.hourly) return "";
   const scoreOf = (w) => Math.max(...d.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
@@ -275,7 +276,7 @@ const whyLine = (spot, sp, date, r) => {
   const spS = spotSeasonFor(spot, date);
   if (spS < 0.4 && spot.seasonNote) return `${spot.seasonNote} Prime here: ${spot.brief.prime}`;
   const seas = r && r.seas != null ? r.seas : seasonalFor(spot.c, sp, date) * spS;
-  let a = seas >= 0.8 ? `Prime ${MNF[m]} for ${s.short.toLowerCase()}s here` : seas >= 0.5 ? `Solid ${MNF[m]} window` : seas >= 0.25 ? `Shoulder season, pick your days` : `Off season for ${s.short.toLowerCase()}s, this is a scouting score`;
+  let a = seas >= 0.8 ? `Prime ${MNF[m]} for ${SPP(sp)} here` : seas >= 0.5 ? `Solid ${MNF[m]} window` : seas >= 0.25 ? `Shoulder season, pick your days` : `Off season for ${SPP(sp)}, this is a scouting score`;
   if (r && r.score != null && r.score < 50 && seas >= 0.5) {
     const why = [];
     if (r.wind != null && r.wind <= 0.75 && r.spd != null) why.push(`wind ${Math.round(r.spd)} mph`);
@@ -432,7 +433,7 @@ function localAnswer(q, env) {
   if (spotHit) return { text: `${spotHit.name} (${spotHit.area}): ${spotHit.brief.read} The move: ${spotHit.brief.cast} Prime: ${spotHit.brief.prime}`, pickId: spotHit.id };
   if (/where|which spot|best (spot|bet|water)|somewhere|other spot|instead/.test(s) && env.ranking && env.ranking.length) {
     const top = env.ranking[0];
-    return { text: `The call for ${SPX[env.sp].short.toLowerCase()}s today is ${top.spot.name} (${top.spot.area}), ${to10(top.peak)}/10. ${whyLine(top.spot, env.sp, env.date, top.best)} Backup: ${env.ranking[1] ? env.ranking[1].spot.name : "none scoring"}.`, pickId: top.spot.id };
+    return { text: `The call for ${SPP(env.sp)} today is ${top.spot.name} (${top.spot.area}), ${to10(top.peak)}/10. ${whyLine(top.spot, env.sp, env.date, top.best)} Backup: ${env.ranking[1] ? env.ranking[1].spot.name : "none scoring"}.`, pickId: top.spot.id };
   }
   if (has(/\b(best day|when should|next week|this month|30 day|forecast)\b/) && env.board && env.board.length) {
     const b = [...env.board].sort((a, z) => z.peak * z.conf - a.peak * a.conf)[0];
@@ -488,7 +489,7 @@ function App() {
   const openChat = () => {
     setChat((c) => {
       if (c.open) return { ...c, open: false };
-      const intro = { me: false, t: `You're on ${spot.name}, ${dm ? to10(dm.peak) : "?"}/10 for ${SPX[sp].short.toLowerCase()}s ${iso(date) === iso(today) ? "today" : DOW[date.getDay()]}. Ask me why the score is what it is, the windows, what fly right now, whether to wade or bail, or where else within range.` };
+      const intro = { me: false, t: `You're on ${spot.name}, ${dm ? to10(dm.peak) : "?"}/10 for ${SPP(sp)} ${iso(date) === iso(today) ? "today" : DOW[date.getDay()]}. Ask me why the score is what it is, the windows, what fly right now, whether to wade or bail, or where else within range.` };
       return { open: true, msgs: c.msgs.length === 0 ? [intro] : [...c.msgs, intro] };
     });
   };
@@ -989,7 +990,7 @@ function App() {
       const nights = Math.max(1, Math.min(plan.nights, 30 - off0));
       const cand = nearestSpots(g.la, g.lo, 24).filter((x) => x.mi <= 120)
         .filter(({ s }) => plan.sp === "any" ? true : (s.sp[plan.sp] || 0) > 0).slice(0, 8);
-      if (!cand.length) { setPlanMsg("No covered water within 120 miles of there" + (plan.sp !== "any" ? " holding " + SPX[plan.sp].short.toLowerCase() + "s" : "") + ". Corridors so far: Northeast, Lowcountry, Florida, Bahamas."); setPlanBusy(false); return; }
+      if (!cand.length) { setPlanMsg("No covered water within 120 miles of there" + (plan.sp !== "any" ? " holding " + SPP(plan.sp) : "") + ". Corridors so far: Northeast, Lowcountry, Florida, Bahamas."); setPlanBusy(false); return; }
       cand.forEach(({ s }) => fetchStation(s.station));
       setPlanReq({ label: g.label, startD, off0, nights, cand });
     } catch (e) { setPlanMsg("Planner hit a snag. Try again."); setPlanBusy(false); }
@@ -1061,7 +1062,7 @@ function App() {
     const nx = (ctxToday.events || []).filter((e) => e.date > now).slice(0, 2).map((e) => `${e.hl === "H" ? "high" : "low"} ${clock(e.date)}`).join(", ");
     const tideLine = nx ? `Next tides: ${nx}.` : "No tide feed for this water.";
     const explainLine = dm ? `${spot.name} is ${to10(dm.peak)}/10 today. ${strong.length ? "Working for you: " + strong.join(", ") + "." : ""} ${weak.length ? "Holding it back: " + weak.join(", ") + "." : "Nothing major against it, the ceiling is just the season."} ${windowLine}` : "Still pulling data, ask me in a second.";
-    const statusLine = dm ? `${spot.name} right now: ${to10(dm.peak)}/10 at ${conf}% confidence for ${SPX[sp].short.toLowerCase()}s, water ${sstSpot}F. ${windowLine} ${tideLine}` : "Still pulling data, ask me in a second.";
+    const statusLine = dm ? `${spot.name} right now: ${to10(dm.peak)}/10 at ${conf}% confidence for ${SPP(sp)}, water ${sstSpot}F. ${windowLine} ${tideLine}` : "Still pulling data, ask me in a second.";
     const nb = blockOfHour(now.getHours());
     const ft = rankFlies(sp, nb, clarityFor(ctxToday));
     const flyLine = ft.length ? `Right now (${nb}, water reads ${clarityFor(ctxToday)}): 1) ${ft[0].f.n} ${ft[0].f.sz}, ${ft[0].f.why.toLowerCase()}. ${ft[1] ? "2) " + ft[1].f.n + " " + ft[1].f.sz + ". " : ""}${ft[2] ? "3) " + ft[2].f.n + " " + ft[2].f.sz + "." : ""}` : SPX[sp].flies;
