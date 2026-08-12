@@ -3320,11 +3320,13 @@ function App() {
       const s0 = at0(st[0] + 0.5), e0 = at0(st[1] + 0.5);
       const ts0 = ctxToday.events ? tideStateAt(ctxToday.events, new Date((s0.getTime() + e0.getTime()) / 2)) : null;
       const why0 = (ts0 ? (ts0.rising ? "on the flood, " : "on the ebb, ") : "") + "the best of a slow day";
-      return [{ s: s0, e: e0, why: why0 }];
+      const pk0 = Math.max(...dm.hourly.map((p) => p.score));
+      return [{ s: s0, e: e0, why: why0, pk: pk0, best: false }];
     }
     const at = (hh) => { const t = new Date(date); t.setHours(Math.floor(hh), Math.round((hh % 1) * 60), 0, 0); return t; };
     const scoreOf = (w) => Math.max(...dm.hourly.filter((p) => p.h >= w[0] && p.h <= w[1]).map((p) => p.score));
-    const ws = [...dm.windows].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 2).sort((a, b) => a[0] - b[0]);
+    const ws = [...dm.windows].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 3).sort((a, b) => a[0] - b[0]);
+    const top = Math.max(...ws.map(scoreOf));
     return ws.map(([a, b]) => {
       const s = at(a + 0.5), e = at(b + 0.5), mid = new Date((s.getTime() + e.getTime()) / 2);
       const ts = ctxToday.events ? tideStateAt(ctxToday.events, mid) : null;
@@ -3335,7 +3337,8 @@ function App() {
         if (a + 0.5 <= rH + 1.5) why = ("first light " + why).trim();
         else if (b + 0.5 >= sH - 1.5) why = ("last light " + why).trim();
       }
-      return { s, e, why: why || "prime conditions" };
+      const pk = scoreOf([a, b]);
+      return { s, e, why: why || "prime conditions", pk, best: ws.length > 1 && pk === top };
     });
   }, [dm, date]);
 
@@ -3842,7 +3845,10 @@ function App() {
               <div style={{ marginTop: 10, border: `1px solid ${C.blaze}55`, background: C.blazeSoft, borderRadius: 10, padding: "9px 12px" }}>
                 <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: 1.2, color: C.blaze, marginBottom: 3 }}>WHEN {iso(date) === iso(today) ? "TODAY" : DOW[date.getDay()].toUpperCase() + " " + (date.getMonth() + 1) + "/" + date.getDate()}</div>
                 {whenToday.map((w, i) => (
-                  <div key={i} style={{ fontSize: 14.5, color: C.bone, lineHeight: 1.55 }}>{clock(w.s)} to {clock(w.e)}, {w.why}</div>
+                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 14.5, color: w.best || whenToday.length === 1 ? C.bone : C.stone, lineHeight: 1.6 }}>
+                    <span style={{ flex: 1, minWidth: 0 }}>{w.best ? "\u2605 " : whenToday.length > 1 ? "\u2002\u2002" : ""}{clock(w.s)} to {clock(w.e)}, {w.why}</span>
+                    <span style={{ fontFamily: F.mono, fontSize: 11.5, fontWeight: 700, flexShrink: 0, color: w.pk >= 70 ? C.blaze : w.pk >= 50 ? C.stone : C.dim }}>{to10(w.pk)}/10</span>
+                  </div>
                 ))}
               </div>
             )}
