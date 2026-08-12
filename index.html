@@ -458,7 +458,7 @@ function localAnswer(q, env) {
   }
   if (has(/\b(book|podcast|learn|read|library|source)\b/)) return { text: `The library behind this thing: ${KB.canon.join("; ")}. Start with Tabory if you fish the Northeast and Dick Brown if the flats call you.` };
   if (has(/\b(tide|water temp|wind|weather|moon)\b/) && env.cond) return { text: env.cond };
-  return { text: `Ask me like you'd ask the dock: "where should I fish Saturday", "why is ${env.spotName} only a ${to10(env.dm ? env.dm.peak : 50)}", "what tide tonight", "should I bother tomorrow", "what do ${spName(env.sp)}s eat in ${MONFULL[env.date.getMonth()]}", "what color fly in dirty water". I cover ${CORR.map(c => c.short).join(", ")}, every spot on the board.` };
+  return { text: `Ask me like you'd ask the dock: "where should I fish Saturday", "why is ${env.spotName} only a ${to10(env.dm ? env.dm.peak : 50)}", "what tide tonight", "should I bother tomorrow", "what do ${SPP(env.sp)} eat in ${MONFULL[env.date.getMonth()]}", "what color fly in dirty water". I cover ${CORR.map(c => c.short).join(", ")}, every spot on the board.` };
 }
 
 /* ---------- App ---------- */
